@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Monitoring Progres Konstruksi - Time Series</title>
+
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body, html {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+    #map {
+      width: 100%;
+      height: 100%;
+      background: #111;
+    }
+
+    /* Floating Header Info */
+    .dashboard-header {
+      position: absolute;
+      top: 15px;
+      left: 60px;
+      z-index: 1000;
+      background: rgba(18, 24, 38, 0.85);
+      backdrop-filter: blur(8px);
+      color: #ffffff;
+      padding: 12px 20px;
+      border-radius: 10px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      pointer-events: auto;
+    }
+    .dashboard-header h1 {
+      font-size: 16px;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+    }
+    .dashboard-header p {
+      font-size: 12px;
+      color: #94a3b8;
+      margin-top: 3px;
+    }
+
+    /* Petunjuk Tirai Pembanding */
+    .compare-legend {
+      position: absolute;
+      bottom: 25px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 1000;
+      display: flex;
+      gap: 15px;
+      pointer-events: none;
+    }
+    .badge {
+      background: rgba(15, 23, 42, 0.85);
+      backdrop-filter: blur(6px);
+      color: #fff;
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 500;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    }
+    .badge-left {
+      color: #38bdf8;
+    }
+    .badge-right {
+      color: #4ade80;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Panel Judul Proyek -->
+  <div class="dashboard-header">
+    <h1>Monitoring Progres Pembangunan</h1>
+    <p>Perbandingan Ortofoto Time-Series Drone</p>
+  </div>
+
+  <!-- Indikator Kiri & Kanan -->
+  <div class="compare-legend">
+    <div class="badge badge-left">◀ Pemetaan Periode 2</div>
+    <div class="badge badge-right">Pemetaan Periode 3 ▶</div>
+  </div>
+
+  <!-- Kontainer Peta -->
+  <div id="map"></div>
+
+  <!-- Leaflet JS & Plugin Side-by-Side -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://cdn.jsdelivr.net/gh/digidem/leaflet-side-by-side@gh-pages/leaflet-side-by-side.min.js"></script>
+
+  <script>
+    // Inisialisasi peta dan pusatkan langsung ke lokasi proyek Anda
+    const map = L.map('map', {
+      center: [-6.545, 106.865],
+      zoom: 17,
+      maxZoom: 20
+    });
+
+    // Peta Dasar Satelit Global (Google Satellite)
+    const basemap = L.tileLayer('https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
+      maxZoom: 20,
+      attribution: '&copy; Google Maps'
+    }).addTo(map);
+
+    // Lapisan Ortofoto Periode 2 (Sisi Kiri)
+    const layerPeriode2 = L.tileLayer('rgb pemetaan 2/{z}/{x}/{y}.png', {
+      minZoom: 16,
+      maxZoom: 19,
+      tms: false
+    }).addTo(map);
+
+    // Lapisan Ortofoto Periode 3 (Sisi Kanan)
+    const layerPeriode3 = L.tileLayer('rgb pemetaan 3/{z}/{x}/{y}.png', {
+      minZoom: 16,
+      maxZoom: 19,
+      tms: false
+    }).addTo(map);
+
+    // Aktifkan alat tirai pembanding belah layar (Swipe)
+    const sideBySide = L.control.sideBySide(layerPeriode2, layerPeriode3);
+    sideBySide.addTo(map);
+  </script>
+</body>
+</html>
