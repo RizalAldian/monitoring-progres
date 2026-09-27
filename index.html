@@ -3,137 +3,817 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Monitoring Progres Konstruksi - Time Series</title>
+  <title>Dashboard Monitoring Progres Konstruksi</title>
 
-  <!-- Leaflet CSS -->
+  <!-- Leaflet CSS, Turf JS, & Google Font Inter -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
   <style>
+    :root {
+      --bg-glass: rgba(15, 23, 42, 0.85);
+      --border-glass: rgba(255, 255, 255, 0.14);
+      --accent-blue: #0284c7;
+      --accent-cyan: #38bdf8;
+      --accent-green: #22c55e;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+    }
+
     * {
       box-sizing: border-box;
       margin: 0;
       padding: 0;
+      font-family: 'Inter', sans-serif;
+      -webkit-font-smoothing: antialiased;
     }
+
     body, html {
       width: 100%;
       height: 100%;
       overflow: hidden;
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #0b0f19;
     }
+
     #map {
       width: 100%;
       height: 100%;
-      background: #111;
+      background: #0b0f19;
+      position: relative;
     }
 
-    /* Floating Header Info */
-    .dashboard-header {
+    /* Floating Panel Kiri Atas */
+    .top-panel {
       position: absolute;
-      top: 15px;
-      left: 60px;
+      top: 16px;
+      left: 16px;
       z-index: 1000;
-      background: rgba(18, 24, 38, 0.85);
-      backdrop-filter: blur(8px);
-      color: #ffffff;
-      padding: 12px 20px;
-      border-radius: 10px;
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
-      border: 1px solid rgba(255, 255, 255, 0.15);
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      max-width: 440px;
+      pointer-events: none;
+    }
+
+    .card {
+      background: var(--bg-glass);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border: 1px solid var(--border-glass);
+      border-radius: 14px;
+      padding: 16px 20px;
+      color: var(--text-main);
+      box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.5);
       pointer-events: auto;
     }
-    .dashboard-header h1 {
-      font-size: 16px;
-      font-weight: 600;
-      letter-spacing: 0.5px;
-    }
-    .dashboard-header p {
-      font-size: 12px;
-      color: #94a3b8;
-      margin-top: 3px;
+
+    .header-title-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 6px;
     }
 
-    /* Petunjuk Tirai Pembanding */
-    .compare-legend {
+    .project-tag {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: var(--accent-cyan);
+      background: rgba(56, 189, 248, 0.12);
+      padding: 3px 10px;
+      border-radius: 20px;
+      border: 1px solid rgba(56, 189, 248, 0.25);
+    }
+
+    .card h1 {
+      font-size: 16px;
+      font-weight: 700;
+      letter-spacing: -0.2px;
+      line-height: 1.3;
+    }
+
+    .card p.desc {
+      font-size: 12px;
+      color: var(--text-muted);
+      line-height: 1.4;
+      margin-top: 4px;
+    }
+
+    /* Kontrol Perbandingan Periode */
+    .control-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 14px;
+      padding-top: 12px;
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .select-group label {
+      display: block;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 6px;
+    }
+
+    .label-left { color: var(--accent-cyan); }
+    .label-right { color: var(--accent-green); }
+
+    .custom-select {
+      width: 100%;
+      background: rgba(15, 23, 42, 0.9);
+      color: var(--text-main);
+      border: 1px solid var(--border-glass);
+      border-radius: 8px;
+      padding: 7px 10px;
+      font-size: 12px;
+      font-weight: 500;
+      outline: none;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .custom-select:focus {
+      border-color: var(--accent-blue);
+      box-shadow: 0 0 0 2px rgba(2, 132, 199, 0.3);
+    }
+
+    /* Kontrol Layer Vektor / Siteplan */
+    .vector-section {
+      margin-top: 14px;
+      padding-top: 12px;
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .vector-title {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--text-muted);
+      margin-bottom: 10px;
+    }
+
+    .vector-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .checkbox-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      color: var(--text-main);
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .checkbox-item input[type="checkbox"] {
+      accent-color: var(--accent-cyan);
+      width: 15px;
+      height: 15px;
+      cursor: pointer;
+    }
+
+    .color-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 3px;
+      display: inline-block;
+      flex-shrink: 0;
+    }
+
+    /* Floating Panel Kanan Atas */
+    .map-tools {
       position: absolute;
-      bottom: 25px;
+      top: 16px;
+      right: 16px;
+      z-index: 1000;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .tool-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      background: var(--bg-glass);
+      backdrop-filter: blur(12px);
+      padding: 6px;
+      border-radius: 12px;
+      border: 1px solid var(--border-glass);
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+    }
+
+    .tool-btn {
+      width: 40px;
+      height: 40px;
+      background: transparent;
+      border: 1px solid transparent;
+      border-radius: 8px;
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .tool-btn:hover {
+      background: rgba(255, 255, 255, 0.1);
+      color: #fff;
+    }
+
+    .tool-btn.active {
+      background: rgba(56, 189, 248, 0.2);
+      border-color: var(--accent-cyan);
+      color: var(--accent-cyan);
+    }
+
+    .tool-btn svg {
+      width: 20px;
+      height: 20px;
+      fill: currentColor;
+    }
+
+    /* Banner Panduan */
+    .measure-guide {
+      position: absolute;
+      top: 16px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 1000;
+      background: var(--bg-glass);
+      backdrop-filter: blur(12px);
+      color: #fff;
+      padding: 8px 18px;
+      border-radius: 30px;
+      font-size: 12px;
+      font-weight: 500;
+      border: 1px solid var(--border-glass);
+      box-shadow: 0 6px 20px rgba(0,0,0,0.35);
+      display: none;
+      pointer-events: none;
+    }
+
+    /* Indikator Tirai Bawah */
+    .compare-indicator {
+      position: absolute;
+      bottom: 24px;
       left: 50%;
       transform: translateX(-50%);
       z-index: 1000;
       display: flex;
-      gap: 15px;
+      gap: 12px;
       pointer-events: none;
     }
-    .badge {
-      background: rgba(15, 23, 42, 0.85);
-      backdrop-filter: blur(6px);
-      color: #fff;
+
+    .badge-pill {
+      background: var(--bg-glass);
+      backdrop-filter: blur(10px);
+      color: var(--text-main);
       padding: 8px 16px;
-      border-radius: 20px;
-      font-size: 13px;
-      font-weight: 500;
-      border: 1px solid rgba(255, 255, 255, 0.2);
-      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+      border-radius: 30px;
+      font-size: 12px;
+      font-weight: 600;
+      border: 1px solid var(--border-glass);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+      display: flex;
+      align-items: center;
+      gap: 8px;
     }
-    .badge-left {
+
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+    }
+    .dot-left { background-color: var(--accent-cyan); box-shadow: 0 0 8px var(--accent-cyan); }
+    .dot-right { background-color: var(--accent-green); box-shadow: 0 0 8px var(--accent-green); }
+
+    /* Slider Pembatas Belah Layar */
+    .custom-slider-container {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      left: 0;
+      width: 60px;
+      margin-left: -30px;
+      z-index: 900;
+      cursor: col-resize;
+      user-select: none;
+      touch-action: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      will-change: transform;
+    }
+
+    .custom-slider-line {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      left: 50%;
+      width: 3px;
+      margin-left: -1.5px;
+      background: #ffffff;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.8), 0 0 4px rgba(0, 0, 0, 0.5);
+      pointer-events: none;
+    }
+
+    .custom-slider-handle {
+      position: relative;
+      z-index: 2;
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: #0f172a;
+      border: 2.5px solid #ffffff;
       color: #38bdf8;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 18px rgba(0, 0, 0, 0.6), 0 0 12px rgba(56, 189, 248, 0.4);
+      transition: transform 0.15s ease, background 0.15s ease;
+      pointer-events: none;
     }
-    .badge-right {
-      color: #4ade80;
+
+    .custom-slider-container:hover .custom-slider-handle,
+    .custom-slider-container.dragging .custom-slider-handle {
+      transform: scale(1.15);
+      background: #1e293b;
+      box-shadow: 0 6px 24px rgba(0, 0, 0, 0.8), 0 0 20px rgba(56, 189, 248, 0.8);
+    }
+
+    /* Pop-up Pengukuran & Vektor */
+    .leaflet-popup-content-wrapper {
+      background: rgba(15, 23, 42, 0.94) !important;
+      backdrop-filter: blur(10px);
+      color: #fff !important;
+      border-radius: 8px !important;
+      border: 1px solid var(--border-glass) !important;
+      box-shadow: 0 6px 20px rgba(0,0,0,0.5) !important;
+    }
+    .leaflet-popup-tip {
+      background: rgba(15, 23, 42, 0.94) !important;
+    }
+
+    @media (max-width: 640px) {
+      .top-panel {
+        max-width: calc(100vw - 32px);
+      }
+      .compare-indicator {
+        bottom: 16px;
+        flex-direction: column;
+        gap: 6px;
+      }
     }
   </style>
 </head>
 <body>
 
-  <!-- Panel Judul Proyek -->
-  <div class="dashboard-header">
-    <h1>Monitoring Progres Pembangunan</h1>
-    <p>Perbandingan Ortofoto Time-Series Drone</p>
+  <!-- Panel Judul & Kontrol Layer -->
+  <div class="top-panel">
+    <div class="card">
+      <div class="header-title-row">
+        <span class="project-tag">Triniti Land</span>
+      </div>
+      <h1>Monitoring Progres Lapangan</h1>
+      <p class="desc">Bandingkan kondisi ortofoto drone dan pantau kesesuaian siteplan rencana secara real-time.</p>
+
+      <!-- Pilihan Periode Ortofoto -->
+      <div class="control-grid">
+        <div class="select-group">
+          <label class="label-left">Sisi Kiri (Sebelum)</label>
+          <select id="selectLeft" class="custom-select">
+            <option value="p2" selected>Periode 2</option>
+            <option value="p3">Periode 3</option>
+          </select>
+        </div>
+        <div class="select-group">
+          <label class="label-right">Sisi Kanan (Sesudah)</label>
+          <select id="selectRight" class="custom-select">
+            <option value="p2">Periode 2</option>
+            <option value="p3" selected>Periode 3</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Centang Layer Desain / Siteplan -->
+      <div class="vector-section">
+        <div class="vector-title">Layer Rencana / Siteplan</div>
+        <div class="vector-grid">
+          <label class="checkbox-item">
+            <input type="checkbox" id="chkCluster1" checked>
+            <span class="color-dot" style="background:#38bdf8;"></span>
+            <span>Cluster 1</span>
+          </label>
+          <label class="checkbox-item">
+            <input type="checkbox" id="chkCluster2" checked>
+            <span class="color-dot" style="background:#34d399;"></span>
+            <span>Cluster 2</span>
+          </label>
+          <label class="checkbox-item">
+            <input type="checkbox" id="chkCluster3" checked>
+            <span class="color-dot" style="background:#fbbf24;"></span>
+            <span>Cluster 3</span>
+          </label>
+          <label class="checkbox-item">
+            <input type="checkbox" id="chkRev" checked>
+            <span class="color-dot" style="background:#f43f5e;"></span>
+            <span>Rencana Jalan</span>
+          </label>
+        </div>
+      </div>
+    </div>
   </div>
 
-  <!-- Indikator Kiri & Kanan -->
-  <div class="compare-legend">
-    <div class="badge badge-left">◀ Pemetaan Periode 2</div>
-    <div class="badge badge-right">Pemetaan Periode 3 ▶</div>
+  <!-- Panduan Mode Pengukuran -->
+  <div class="measure-guide" id="measureGuide">
+    Klik titik ukur pada peta. Klik 2x untuk selesai.
   </div>
 
-  <!-- Kontainer Peta -->
-  <div id="map"></div>
+  <!-- Tombol Aksi Kanan -->
+  <div class="map-tools">
+    <div class="tool-group">
+      <button class="tool-btn" id="btnRecenter" title="Pusatkan ke Area Proyek">
+        <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm0-14c-3.31 0-6 2.69-6 6s2.69 6 6 6 6-2.69 6-6-2.69-6-6-6zm0 10c-2.21 0-4-1.79-4-4s1.79-4 4-4 4 1.79 4 4-1.79 4-4 4z"/></svg>
+      </button>
+      <button class="tool-btn" id="btnFullscreen" title="Layar Penuh">
+        <svg viewBox="0 0 24 24"><path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/></svg>
+      </button>
+    </div>
 
-  <!-- Leaflet JS & Plugin Side-by-Side -->
+    <div class="tool-group">
+      <button class="tool-btn" id="btnDistance" title="Ukur Panjang / Jarak">
+        <svg viewBox="0 0 24 24"><path d="M19.5 3h-15C3.1 3 2 4.1 2 5.5v13C2 19.9 3.1 21 4.5 21h15c1.4 0 2.5-1.1 2.5-2.5v-13C22 4.1 20.9 3 19.5 3zm0 16H4.5c-.3 0-.5-.2-.5-.5v-4h3v-2H4v-3h5V7H4V5.5c0-.3.2-.5.5-.5h15c.3 0 .5.2.5.5v13c0 .3-.2.5-.5.5z"/></svg>
+      </button>
+      <button class="tool-btn" id="btnArea" title="Ukur Luas Area">
+        <svg viewBox="0 0 24 24"><path d="M17 15.7V13h2v4.7l-7 4.1-7-4.1V13h2v2.7l5 2.9 5-2.9zM12 2l8 4.7v4.1l-2-1.2V6.7l-6-3.5-6 3.5v2.9l-2 1.2V6.7L12 2z"/></svg>
+      </button>
+      <button class="tool-btn" id="btnClearMeasure" title="Hapus Hasil Ukur">
+        <svg viewBox="0 0 24 24"><path d="M16 9v10H8V9h8m-1.5-6h-5l-1 1H5v2h14V4h-3.5l-1-1zM18 7H6v12c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7z"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- Indikator Tirai Bawah -->
+  <div class="compare-indicator">
+    <div class="badge-pill">
+      <span class="dot dot-left"></span>
+      <span id="badgeTextLeft">Periode 2</span>
+    </div>
+    <div class="badge-pill">
+      <span class="dot dot-right"></span>
+      <span id="badgeTextRight">Periode 3</span>
+    </div>
+  </div>
+
+  <!-- Map Container -->
+  <div id="map">
+    <!-- Slider Belah Layar Interaktif -->
+    <div id="sliderDivider" class="custom-slider-container">
+      <div class="custom-slider-line"></div>
+      <div class="custom-slider-handle">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="15 18 9 12 15 6"></polyline>
+        </svg>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-left:-6px;">
+          <polyline points="9 18 15 12 9 6"></polyline>
+        </svg>
+      </div>
+    </div>
+  </div>
+
+  <!-- Script Leaflet & Turf -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script src="https://cdn.jsdelivr.net/gh/digidem/leaflet-side-by-side@gh-pages/leaflet-side-by-side.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Turf.js/6.5.0/turf.min.js"></script>
 
   <script>
-    // Inisialisasi peta dan pusatkan langsung ke lokasi proyek Anda
+    const projectCenter = [-6.545, 106.865];
+    const initialZoom = 17;
+
     const map = L.map('map', {
-      center: [-6.545, 106.865],
-      zoom: 17,
-      maxZoom: 20
+      center: projectCenter,
+      zoom: initialZoom,
+      zoomControl: false,
+      maxZoom: 21
     });
 
-    // Peta Dasar Satelit Global (Google Satellite)
-    const basemap = L.tileLayer('https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
-      maxZoom: 20,
+    // Peta Dasar Satelit
+    L.tileLayer('https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
+      maxZoom: 21,
       attribution: '&copy; Google Maps'
     }).addTo(map);
 
-    // Lapisan Ortofoto Periode 2 (Sisi Kiri)
-    const layerPeriode2 = L.tileLayer('rgb pemetaan 2/{z}/{x}/{y}.png', {
-      minZoom: 16,
-      maxZoom: 19,
-      tms: false
-    }).addTo(map);
+    // Fungsi Pembaca Layer Ortofoto Drone
+    function createOrthoLayer(key) {
+      const folder = key === 'p2' ? 'rgb pemetaan 2' : 'rgb pemetaan 3';
+      return L.tileLayer(`${folder}/{z}/{x}/{y}.png`, {
+        minZoom: 16,
+        maxZoom: 21,
+        maxNativeZoom: 19,
+        tms: false
+      });
+    }
 
-    // Lapisan Ortofoto Periode 3 (Sisi Kanan)
-    const layerPeriode3 = L.tileLayer('rgb pemetaan 3/{z}/{x}/{y}.png', {
-      minZoom: 16,
-      maxZoom: 19,
-      tms: false
-    }).addTo(map);
+    let currentLeftLayer = createOrthoLayer('p2').addTo(map);
+    let currentRightLayer = createOrthoLayer('p3').addTo(map);
 
-    // Aktifkan alat tirai pembanding belah layar (Swipe)
-    const sideBySide = L.control.sideBySide(layerPeriode2, layerPeriode3);
-    sideBySide.addTo(map);
+    // ========================================================
+    // ENGINE PEMOTONG CITRA PRESISI & MULUS
+    // ========================================================
+    const slider = document.getElementById('sliderDivider');
+    let isDragging = false;
+    let sliderRatio = 0.5;
+
+    function updateClip() {
+      if (!map) return;
+      const size = map.getSize();
+      if (size.x === 0 || size.y === 0) return;
+
+      const x = size.x * sliderRatio;
+      slider.style.transform = `translateX(${x}px)`;
+
+      const nw = map.containerPointToLayerPoint([0, 0]);
+      const se = map.containerPointToLayerPoint(size);
+      const clipPoint = map.containerPointToLayerPoint([x, 0]);
+
+      const leftClip = `rect(${nw.y}px, ${clipPoint.x}px, ${se.y}px, ${nw.x}px)`;
+      const rightClip = `rect(${nw.y}px, ${se.x}px, ${se.y}px, ${clipPoint.x}px)`;
+
+      if (currentLeftLayer && currentLeftLayer.getContainer()) {
+        currentLeftLayer.getContainer().style.clip = leftClip;
+      }
+      if (currentRightLayer && currentRightLayer.getContainer()) {
+        currentRightLayer.getContainer().style.clip = rightClip;
+      }
+    }
+
+    slider.addEventListener('pointerdown', (e) => {
+      isDragging = true;
+      slider.classList.add('dragging');
+      slider.setPointerCapture(e.pointerId);
+      e.stopPropagation();
+      e.preventDefault();
+    });
+
+    slider.addEventListener('pointermove', (e) => {
+      if (!isDragging) return;
+      const rect = map.getContainer().getBoundingClientRect();
+      let x = e.clientX - rect.left;
+      x = Math.max(0, Math.min(rect.width, x));
+      sliderRatio = x / rect.width;
+      requestAnimationFrame(updateClip);
+    });
+
+    const stopDragging = (e) => {
+      if (!isDragging) return;
+      isDragging = false;
+      slider.classList.remove('dragging');
+      try { slider.releasePointerCapture(e.pointerId); } catch(err) {}
+    };
+
+    slider.addEventListener('pointerup', stopDragging);
+    slider.addEventListener('pointercancel', stopDragging);
+
+    L.DomEvent.disableClickPropagation(slider);
+
+    map.on('move zoom resize', updateClip);
+    map.whenReady(() => {
+      setTimeout(updateClip, 100);
+    });
+
+    // ========================================================
+    // KONTROL GANTI LAYER DROPDOWN
+    // ========================================================
+    function updateLayers() {
+      const leftKey = document.getElementById('selectLeft').value;
+      const rightKey = document.getElementById('selectRight').value;
+
+      if (currentLeftLayer) map.removeLayer(currentLeftLayer);
+      if (currentRightLayer) map.removeLayer(currentRightLayer);
+
+      currentLeftLayer = createOrthoLayer(leftKey).addTo(map);
+      currentRightLayer = createOrthoLayer(rightKey).addTo(map);
+
+      document.getElementById('badgeTextLeft').textContent = document.getElementById('selectLeft').selectedOptions[0].text;
+      document.getElementById('badgeTextRight').textContent = document.getElementById('selectRight').selectedOptions[0].text;
+
+      setTimeout(updateClip, 50);
+    }
+
+    document.getElementById('selectLeft').addEventListener('change', updateLayers);
+    document.getElementById('selectRight').addEventListener('change', updateLayers);
+
+    // ========================================================
+    // MEMUAT LAYER SHAPEFILE / GEOJSON (SITEPLAN & JALAN)
+    // ========================================================
+    const vectorLayers = {};
+
+    function initGeoJsonLayer(url, layerName, color, checkboxId) {
+      fetch(url)
+        .then(res => {
+          if (!res.ok) throw new Error(`HTTP error status ${res.status}`);
+          return res.json();
+        })
+        .then(geojson => {
+          const layer = L.geoJSON(geojson, {
+            style: {
+              color: color,
+              weight: 2.5,
+              opacity: 0.9,
+              fillColor: color,
+              fillOpacity: 0.22
+            },
+            onEachFeature: function(feature, l) {
+              if (feature.properties) {
+                let p = feature.properties;
+                let html = `<div style="font-size:12px;min-width:130px;">`;
+                html += `<div style="font-weight:700;color:${color};margin-bottom:6px;border-bottom:1px solid rgba(255,255,255,0.15);padding-bottom:3px;">${layerName}</div>`;
+                let count = 0;
+                for (let k in p) {
+                  if (p[k] !== null && p[k] !== undefined && p[k] !== '') {
+                    html += `<div style="display:flex;justify-content:space-between;gap:6px;margin-bottom:2px;"><span style="color:#94a3b8;">${k}:</span><b>${p[k]}</b></div>`;
+                    count++;
+                  }
+                }
+                if (count === 0) {
+                  html += `<div style="color:#94a3b8;">Objek ${layerName}</div>`;
+                }
+                html += `</div>`;
+                l.bindPopup(html);
+              }
+            }
+          });
+
+          vectorLayers[checkboxId] = layer;
+
+          const chk = document.getElementById(checkboxId);
+          if (chk && chk.checked) {
+            layer.addTo(map);
+          }
+
+          if (chk) {
+            chk.addEventListener('change', (e) => {
+              if (e.target.checked) {
+                map.addLayer(layer);
+              } else {
+                map.removeLayer(layer);
+              }
+            });
+          }
+        })
+        .catch(err => {
+          console.warn(`Layer ${url} belum termuat atau berkas tidak ditemukan:`, err);
+        });
+    }
+
+    // Inisialisasi berkas GeoJSON
+    initGeoJsonLayer('siteplancluster1.geojson', 'Cluster 1', '#38bdf8', 'chkCluster1');
+    initGeoJsonLayer('siteplancluster2.geojson', 'Cluster 2', '#34d399', 'chkCluster2');
+    initGeoJsonLayer('siteplancluster3.geojson', 'Cluster 3', '#fbbf24', 'chkCluster3');
+    initGeoJsonLayer('rev.geojson', 'Rencana Jalan', '#f43f5e', 'chkRev');
+
+    // ========================================================
+    // ALAT NAVIGASI & PENGUKURAN
+    // ========================================================
+    document.getElementById('btnRecenter').addEventListener('click', () => {
+      map.flyTo(projectCenter, initialZoom, { duration: 1.2 });
+    });
+
+    document.getElementById('btnFullscreen').addEventListener('click', () => {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen();
+      } else {
+        document.exitFullscreen();
+      }
+    });
+
+    let measureMode = null;
+    let measurePoints = [];
+    let measureLayerGroup = L.layerGroup().addTo(map);
+    let tempLine = null;
+    let tempPolygon = null;
+
+    const btnDist = document.getElementById('btnDistance');
+    const btnArea = document.getElementById('btnArea');
+    const btnClear = document.getElementById('btnClearMeasure');
+    const guide = document.getElementById('measureGuide');
+
+    function setMeasureMode(mode) {
+      if (measureMode === mode) {
+        cancelMeasure();
+        return;
+      }
+      cancelMeasure();
+      measureMode = mode;
+      map.getContainer().style.cursor = 'crosshair';
+      map.doubleClickZoom.disable();
+      guide.style.display = 'block';
+
+      if (mode === 'distance') {
+        btnDist.classList.add('active');
+        guide.innerHTML = '<b>Mode Jarak:</b> Klik titik ukur pada peta. Klik 2x untuk selesai.';
+      } else if (mode === 'area') {
+        btnArea.classList.add('active');
+        guide.innerHTML = '<b>Mode Luas:</b> Klik titik sudut area pada peta. Klik 2x untuk selesai.';
+      }
+    }
+
+    function cancelMeasure() {
+      measureMode = null;
+      measurePoints = [];
+      if (tempLine) map.removeLayer(tempLine);
+      if (tempPolygon) map.removeLayer(tempPolygon);
+      tempLine = null;
+      tempPolygon = null;
+      map.getContainer().style.cursor = '';
+      map.doubleClickZoom.enable();
+      guide.style.display = 'none';
+      btnDist.classList.remove('active');
+      btnArea.classList.remove('active');
+    }
+
+    btnDist.addEventListener('click', () => setMeasureMode('distance'));
+    btnArea.addEventListener('click', () => setMeasureMode('area'));
+    btnClear.addEventListener('click', () => {
+      cancelMeasure();
+      measureLayerGroup.clearLayers();
+    });
+
+    map.on('click', (e) => {
+      if (!measureMode) return;
+
+      measurePoints.push(e.latlng);
+
+      L.circleMarker(e.latlng, {
+        radius: 5,
+        color: '#38bdf8',
+        fillColor: '#ffffff',
+        fillOpacity: 1,
+        weight: 2
+      }).addTo(measureLayerGroup);
+
+      if (measureMode === 'distance') {
+        if (!tempLine) {
+          tempLine = L.polyline(measurePoints, { color: '#38bdf8', weight: 3, dashArray: '5, 8' }).addTo(measureLayerGroup);
+        } else {
+          tempLine.setLatLngs(measurePoints);
+        }
+      } else if (measureMode === 'area') {
+        if (!tempPolygon) {
+          tempPolygon = L.polygon(measurePoints, { color: '#22c55e', weight: 2, fillColor: '#22c55e', fillOpacity: 0.25 }).addTo(measureLayerGroup);
+        } else {
+          tempPolygon.setLatLngs(measurePoints);
+        }
+      }
+    });
+
+    map.on('dblclick', (e) => {
+      if (!measureMode || measurePoints.length < 2) return;
+
+      if (measureMode === 'distance') {
+        let totalDistance = 0;
+        for (let i = 0; i < measurePoints.length - 1; i++) {
+          totalDistance += measurePoints[i].distanceTo(measurePoints[i + 1]);
+        }
+
+        const textDist = totalDistance >= 1000 
+          ? (totalDistance / 1000).toFixed(2) + ' km'
+          : totalDistance.toFixed(1) + ' m';
+
+        L.popup()
+          .setLatLng(measurePoints[measurePoints.length - 1])
+          .setContent(`<b>Total Panjang:</b><br><span style="font-size:14px;color:#38bdf8;font-weight:700;">${textDist}</span>`)
+          .openOn(map);
+
+      } else if (measureMode === 'area' && measurePoints.length >= 3) {
+        const coords = measurePoints.map(p => [p.lng, p.lat]);
+        coords.push([measurePoints[0].lng, measurePoints[0].lat]);
+        const turfPoly = turf.polygon([coords]);
+        const areaSqM = turf.area(turfPoly);
+
+        const textSqM = areaSqM.toLocaleString('id-ID', { maximumFractionDigits: 1 }) + ' m²';
+        const textHa = (areaSqM / 10000).toFixed(3) + ' Ha';
+
+        const centerPoly = tempPolygon.getBounds().getCenter();
+        L.popup()
+          .setLatLng(centerPoly)
+          .setContent(`<b>Luas Wilayah:</b><br><span style="font-size:14px;color:#22c55e;font-weight:700;">${textSqM}</span><br><span style="color:#94a3b8">(${textHa})</span>`)
+          .openOn(map);
+      }
+
+      cancelMeasure();
+    });
   </script>
 </body>
 </html>
