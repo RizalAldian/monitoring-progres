@@ -1,0 +1,9 @@
+minggu,tanggal,kontraktor,jenis_pekerjaan,area,luas_m2,cut_m3,fill_m3,rencana_persen,realisasi_persen,status_bast
+M1,2026-10-01,PT Karya Mandiri,Grading Lahan,Cluster 1,4500,5420,4890,15.0,16.5,Sudah BAST
+M2,2026-10-08,PT Karya Mandiri,Pembentukan Jalan,ROW,2100,1890,1650,35.0,38.0,Sudah BAST
+M3,2026-10-15,PT Karya Mandiri,Grading Lahan,Cluster 2,3800,4680,3920,65.0,62.0,Belum BAST
+M4,2026-10-22,PT Karya Mandiri,Drainase & Saluran,Cluster 2,1200,950,420,100.0,88.5,Belum BAST
+M1,2026-10-01,CV Bangun Jaya,Grading Lahan,Cluster 3,3200,3150,2110,20.0,18.0,Sudah BAST
+M2,2026-10-08,CV Bangun Jaya,Pembentukan Jalan,Cluster 3,1850,1420,1100,50.0,45.5,Belum BAST
+M3,2026-10-15,CV Bangun Jaya,Perkerasan Jalan,ROW,2900,820,1950,80.0,76.0,Belum BAST
+M4,2026-10-22,CV Bangun Jaya,Finishing Kavling,Cluster 3,4100,600,550,100.0,94.0,Sudah BAST
