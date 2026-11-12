@@ -1,282 +1,1831 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Digital Twin 3D - Triniti Land</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>WebGIS Digital Twin 3D - Triniti Land Sequoia Hills</title>
 
-  <!-- Pustaka MapLibre GL JS (Mesin WebGL 3D Pengganti Leaflet) -->
-  <link href="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.css" rel="stylesheet" />
-  <script src="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
-  <!-- Pustaka GeoTIFF.js untuk membaca DTM secara instan -->
-  <script src="https://cdn.jsdelivr.net/npm/geotiff"></script>
+  <!-- Pustaka 3D WebGL (Three.js), GeoTIFF.js, Turf.js, dan Chart.js -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/geotiff@2.0.7/dist-browser/geotiff.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Turf.js/6.5.0/turf.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 
   <style>
-    body, html { margin: 0; padding: 0; height: 100%; width: 100%; overflow: hidden; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #0f172a; }
-    #map3d { width: 100%; height: 100%; position: absolute; top: 0; left: 0; }
-
-    /* Panel Kontrol 3D Kanan Atas */
-    .control-panel {
-      position: absolute; top: 15px; right: 15px; z-index: 100;
-      background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(10px);
-      border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px;
-      padding: 15px; width: 340px; color: #fff;
-      box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+    :root {
+      --bg-dark: #090d16;
+      --bg-header: #0d1322;
+      --bg-panel: #0f172a;
+      --bg-card: #162033;
+      --bg-card-inner: #0d1526;
+      --border-line: rgba(255, 255, 255, 0.12);
+      --accent-cyan: #06b6d4;
+      --accent-blue: #38bdf8;
+      --accent-green: #22c55e;
+      --accent-amber: #f59e0b;
+      --accent-orange: #f97316;
+      --accent-rose: #f43f5e;
+      --accent-purple: #a855f7;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --header-h: 54px;
+      --sidebar-w: 425px;
     }
-    .panel-title { font-size: 14px; font-weight: bold; color: #38bdf8; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; }
-    .btn-2d-mode { background: rgba(56,189,248,0.2); border: 1px solid #38bdf8; color: #38bdf8; padding: 4px 10px; border-radius: 6px; font-size: 10px; cursor: pointer; font-weight: bold; text-decoration: none; }
-    .btn-2d-mode:hover { background: #38bdf8; color: #0f172a; }
 
-    /* Tombol Navigasi Pitch & Bearing */
-    .nav-btn-group { display: flex; gap: 8px; margin-bottom: 15px; }
-    .nav-btn { flex: 1; padding: 8px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: #fff; border-radius: 6px; font-size: 11px; cursor: pointer; transition: 0.2s; }
-    .nav-btn:hover { background: rgba(56,189,248,0.2); border-color: #38bdf8; }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; -webkit-font-smoothing: antialiased; -webkit-tap-highlight-color: transparent; }
+    body, html { width: 100%; height: 100%; overflow: hidden; background: var(--bg-dark); color: var(--text-main); }
 
-    /* Pengaturan Layer 3D */
-    .layer-group { background: rgba(0,0,0,0.3); padding: 10px; border-radius: 8px; margin-bottom: 15px; border: 1px solid rgba(255,255,255,0.05); }
-    .layer-row { display: flex; align-items: center; justify-content: space-between; font-size: 12px; margin-bottom: 8px; }
-    .layer-row:last-child { margin-bottom: 0; }
-    input[type=checkbox] { accent-color: #38bdf8; cursor: pointer; }
+    /* HEADER ATAS */
+    .top-header {
+      position: fixed; top: 0; left: 0; right: 0; height: var(--header-h);
+      background: var(--bg-header); border-bottom: 1px solid var(--border-line);
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 12px; z-index: 2000; box-shadow: 0 4px 20px rgba(0,0,0,0.6); gap: 8px;
+    }
+    .header-left { display: flex; align-items: center; gap: 10px; min-width: 0; }
+    .btn-hamburger {
+      width: 36px; height: 36px; border-radius: 8px; border: 1px solid var(--border-line);
+      background: rgba(255,255,255,0.04); color: var(--text-main); font-size: 18px;
+      display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; transition: 0.2s;
+    }
+    .btn-hamburger:hover { background: rgba(56, 189, 248, 0.15); border-color: var(--accent-blue); }
 
-    /* Kalkulator Cut & Fill (Simulasi Tampilan) */
-    .calc-box { border-top: 1px solid rgba(255,255,255,0.1); padding-top: 15px; }
-    .calc-title { font-size: 12px; font-weight: bold; margin-bottom: 10px; color: #cbd5e1; display: flex; align-items: center; gap: 6px; }
-    .calc-input-group { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
-    .calc-input-group input { flex: 1; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.2); color: #fff; padding: 6px 10px; border-radius: 6px; outline: none; }
-    
-    .btn-calc { width: 100%; background: #38bdf8; color: #0f172a; border: none; padding: 8px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 12px; transition: 0.2s; }
-    .btn-calc:hover { background: #0284c7; color: #fff; }
+    .brand-logo {
+      width: 32px; height: 32px; border-radius: 50%;
+      background: radial-gradient(circle at 30% 30%, #a855f7, #0284c7);
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+      box-shadow: 0 0 12px rgba(168, 85, 247, 0.4); font-weight: 700; font-size: 11.5px; color: #fff;
+    }
+    .brand-text { min-width: 0; }
+    .brand-text h1 {
+      font-size: 13.5px; font-weight: 700; display: flex; align-items: center; gap: 6px;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .badge-status {
+      font-size: 9px; font-weight: 700; padding: 2px 6px; border-radius: 4px; flex-shrink: 0;
+      background: rgba(56, 189, 248, 0.2); color: var(--accent-blue); border: 1px solid rgba(56, 189, 248, 0.4);
+    }
+    .brand-text p { font-size: 10.5px; color: var(--text-muted); margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-    .result-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px; }
-    .res-box { background: rgba(0,0,0,0.4); padding: 8px; border-radius: 6px; text-align: center; border: 1px solid rgba(255,255,255,0.05); }
-    .res-val { font-size: 14px; font-weight: bold; }
-    .res-lbl { font-size: 10px; color: #94a3b8; }
-    .text-cut { color: #38bdf8; }
-    .text-fill { color: #22c55e; }
+    .header-right {
+      display: flex; align-items: center; gap: 6px; flex-shrink: 0;
+      overflow-x: auto; scrollbar-width: none;
+    }
+    .header-right::-webkit-scrollbar { display: none; }
 
-    /* Indikator Pemuatan DTM */
-    #loadingDtm { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(15,23,42,0.9); padding: 15px 30px; border-radius: 30px; color: #38bdf8; font-weight: bold; font-size: 14px; z-index: 2000; border: 1px solid #38bdf8; box-shadow: 0 0 20px rgba(56,189,248,0.3); display: none; }
+    .hdr-btn {
+      padding: 6px 10px; border-radius: 8px; border: 1px solid var(--border-line);
+      background: rgba(255,255,255,0.05); color: var(--text-main); font-size: 11px;
+      font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 5px;
+      text-decoration: none; transition: 0.2s; white-space: nowrap; flex-shrink: 0;
+    }
+    .hdr-btn:hover { background: rgba(56, 189, 248, 0.15); border-color: var(--accent-blue); }
+    .hdr-btn.primary { background: rgba(34, 197, 94, 0.18); border-color: rgba(34, 197, 94, 0.45); color: #4ade80; }
+    .hdr-btn.cyan { background: rgba(56, 189, 248, 0.18); border-color: rgba(56, 189, 248, 0.45); color: #38bdf8; }
+    .hdr-btn.btn-2d-switch {
+      background: linear-gradient(135deg, rgba(6, 182, 212, 0.28), rgba(34, 197, 94, 0.25));
+      border: 1px solid rgba(56, 189, 248, 0.55); color: #e0f2fe;
+    }
+
+    /* WADAH UTAMA & KANVAS 3D */
+    .main-wrapper {
+      position: fixed; top: var(--header-h); left: 0; right: 0; bottom: 0;
+      display: flex; overflow: hidden;
+    }
+    #viewport3d {
+      flex: 1; width: 100%; height: 100%; position: relative;
+      background: radial-gradient(circle at center, #131d33 0%, #070b14 100%);
+      overflow: hidden; touch-action: none;
+    }
+
+    /* SIDEBAR KIRI BUKA-TUTUP */
+    .left-drawer {
+      position: absolute; top: 0; left: 0; bottom: 0; width: var(--sidebar-w);
+      max-width: 90vw; background: var(--bg-panel);
+      border-right: 1px solid var(--border-line); z-index: 1200;
+      display: flex; flex-direction: column;
+      transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: 8px 0 30px rgba(0,0,0,0.6);
+    }
+    .left-drawer.collapsed { transform: translateX(-100%); }
+
+    .collapsed-tab {
+      position: absolute; top: 14px; left: 0; z-index: 1150;
+      background: var(--bg-header); border: 1px solid var(--border-line); border-left: none;
+      border-radius: 0 10px 10px 0; padding: 10px 7px; color: var(--text-main);
+      cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 6px;
+      box-shadow: 4px 4px 16px rgba(0,0,0,0.5); opacity: 0; pointer-events: none; transition: 0.25s;
+    }
+    .left-drawer.collapsed + .collapsed-tab { opacity: 1; pointer-events: auto; }
+    .collapsed-tab span { writing-mode: vertical-rl; font-size: 11px; font-weight: 700; letter-spacing: 1px; color: var(--accent-blue); }
+
+    .drawer-tabs {
+      display: flex; border-bottom: 1px solid var(--border-line);
+      background: #0a101d; flex-shrink: 0; overflow-x: auto; scrollbar-width: none;
+    }
+    .drawer-tabs::-webkit-scrollbar { display: none; }
+    .d-tab {
+      flex: 1; min-width: max-content; padding: 11px 8px; background: transparent;
+      border: none; border-bottom: 2.5px solid transparent;
+      color: var(--text-muted); font-size: 11px; font-weight: 600;
+      cursor: pointer; transition: 0.2s; text-align: center;
+    }
+    .d-tab:hover { color: #fff; background: rgba(255,255,255,0.02); }
+    .d-tab.active { color: var(--accent-blue); border-bottom-color: var(--accent-blue); background: rgba(56, 189, 248, 0.08); }
+
+    .drawer-content { flex: 1; overflow-y: auto; padding: 12px; -webkit-overflow-scrolling: touch; }
+    .drawer-content::-webkit-scrollbar { width: 5px; }
+    .drawer-content::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 4px; }
+
+    .tab-pane { display: none; flex-direction: column; gap: 11px; }
+    .tab-pane.active { display: flex; }
+
+    .pane-banner {
+      background: linear-gradient(135deg, rgba(30, 41, 59, 0.9), rgba(15, 23, 42, 0.95));
+      border: 1px solid rgba(56, 189, 248, 0.25); border-radius: 10px;
+      padding: 11px 13px; display: flex; justify-content: space-between; align-items: center; gap: 8px;
+    }
+    .pane-banner-title { font-size: 11px; font-weight: 700; text-transform: uppercase; color: #fff; }
+    .pane-banner-sub { font-size: 10px; color: var(--text-muted); margin-top: 2px; }
+    .pane-badge {
+      font-size: 9px; font-weight: 700; padding: 3px 7px; border-radius: 6px;
+      background: rgba(6, 182, 212, 0.18); color: var(--accent-blue); border: 1px solid rgba(6, 182, 212, 0.35);
+      white-space: nowrap; flex-shrink: 0;
+    }
+
+    .menu-card {
+      background: var(--bg-card); border: 1px solid var(--border-line);
+      border-radius: 10px; padding: 11px; display: flex; flex-direction: column; gap: 9px;
+    }
+    .menu-card-header {
+      display: flex; justify-content: space-between; align-items: center;
+      font-size: 10.5px; font-weight: 700; text-transform: uppercase;
+      color: #e2e8f0; padding-bottom: 7px; border-bottom: 1px solid var(--border-line);
+    }
+
+    .custom-select, .custom-input {
+      width: 100%; background: var(--bg-card-inner); color: var(--text-main);
+      border: 1px solid var(--border-line); border-radius: 7px; padding: 7px 9px; font-size: 11.5px; outline: none;
+    }
+    .field-row { display: flex; justify-content: space-between; align-items: center; font-size: 11px; color: var(--text-muted); gap: 8px; }
+    .range-slider { width: 100%; accent-color: var(--accent-cyan); cursor: pointer; height: 5px; }
+
+    .action-btn {
+      width: 100%; padding: 8px 10px; border-radius: 7px; border: 1px solid var(--border-line);
+      background: rgba(56, 189, 248, 0.15); color: var(--accent-blue); font-size: 11.5px; font-weight: 600;
+      cursor: pointer; transition: 0.2s; text-align: center; display: inline-block; text-decoration: none;
+    }
+    .action-btn:hover, .action-btn.active { background: var(--accent-blue); color: #0f172a; }
+    .action-btn.green { background: rgba(34, 197, 94, 0.16); color: #4ade80; border-color: rgba(34, 197, 94, 0.35); }
+    .action-btn.green:hover { background: var(--accent-green); color: #0f172a; }
+    .action-btn.amber { background: rgba(245, 158, 11, 0.16); color: #fbbf24; border-color: rgba(245, 158, 11, 0.35); }
+    .action-btn.amber:hover { background: var(--accent-amber); color: #0f172a; }
+
+    .kpi-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 7px; }
+    .kpi-box {
+      background: var(--bg-card-inner); border: 1px solid var(--border-line);
+      padding: 8px 9px; border-radius: 8px;
+    }
+    .kpi-val { font-size: 13px; font-weight: 700; color: var(--accent-blue); }
+    .kpi-lbl { font-size: 9.5px; color: var(--text-muted); margin-top: 2px; }
+
+    .switch-row {
+      display: flex; align-items: center; justify-content: space-between;
+      background: var(--bg-card-inner); padding: 8px 10px; border-radius: 8px; border: 1px solid var(--border-line);
+      font-size: 11px; font-weight: 500; gap: 8px;
+    }
+    .switch { position: relative; display: inline-block; width: 36px; height: 20px; flex-shrink: 0; }
+    .switch input { opacity: 0; width: 0; height: 0; }
+    .slider-toggle {
+      position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
+      background-color: #334155; transition: 0.25s; border-radius: 20px;
+    }
+    .slider-toggle:before {
+      position: absolute; content: ""; height: 14px; width: 14px; left: 3px; bottom: 3px;
+      background-color: white; transition: 0.25s; border-radius: 50%;
+    }
+    input:checked + .slider-toggle { background-color: var(--accent-cyan); }
+    input:checked + .slider-toggle:before { transform: translateX(16px); }
+
+    .cam-preset-bar {
+      position: absolute; top: 12px; left: calc(var(--sidebar-w) + 14px); z-index: 900;
+      width: max-content; max-width: calc(100% - var(--sidebar-w) - 180px);
+      background: rgba(15, 23, 42, 0.92); backdrop-filter: blur(12px); border: 1px solid var(--border-line);
+      border-radius: 10px; padding: 5px 9px; display: flex; align-items: center; gap: 6px;
+      transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1), max-width 0.3s;
+      overflow-x: auto; scrollbar-width: none; white-space: nowrap;
+    }
+    .cam-preset-bar::-webkit-scrollbar { display: none; }
+    .left-drawer.collapsed ~ #viewport3d .cam-preset-bar {
+      left: 44px; max-width: calc(100% - 210px);
+    }
+    .cam-btn {
+      padding: 4px 9px; border-radius: 6px; border: 1px solid var(--border-line);
+      background: rgba(255,255,255,0.04); color: var(--text-main); font-size: 11px; cursor: pointer; transition: 0.2s; flex-shrink: 0;
+    }
+    .cam-btn:hover { background: var(--accent-blue); color: #0f172a; font-weight: 600; }
+
+    .elev-legend {
+      position: absolute; top: 12px; right: 12px; z-index: 900;
+      background: rgba(15, 23, 42, 0.92); backdrop-filter: blur(12px); border: 1px solid var(--border-line);
+      border-radius: 10px; padding: 8px 11px; width: 148px; font-size: 10px;
+    }
+    .elev-gradient {
+      height: 8px; width: 100%; border-radius: 4px; margin: 5px 0 4px 0;
+      background: linear-gradient(to right, #3b82f6, #06b6d4, #22c55e, #eab308, #ef4444);
+    }
+
+    .bottom-status-bar {
+      position: absolute; bottom: 12px; left: calc(var(--sidebar-w) + 14px); right: 12px; z-index: 900;
+      display: flex; justify-content: space-between; align-items: center; pointer-events: none;
+      transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1); flex-wrap: wrap; gap: 8px;
+    }
+    .left-drawer.collapsed ~ #viewport3d .bottom-status-bar { left: 12px; }
+    .status-pill {
+      background: rgba(15, 23, 42, 0.92); backdrop-filter: blur(12px); border: 1px solid var(--border-line);
+      border-radius: 8px; padding: 5px 10px; font-size: 10.5px; color: var(--text-muted);
+      display: flex; align-items: center; gap: 8px; box-shadow: 0 4px 14px rgba(0,0,0,0.5);
+    }
+
+    #loadingOverlay {
+      position: absolute; inset: 0; background: rgba(9, 13, 22, 0.85); backdrop-filter: blur(6px);
+      z-index: 1500; display: none; flex-direction: column; align-items: center; justify-content: center; gap: 10px; padding: 20px; text-align: center;
+    }
+    .spinner {
+      width: 38px; height: 38px; border: 3.5px solid rgba(56, 189, 248, 0.2);
+      border-top-color: var(--accent-blue); border-radius: 50%; animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .drawer-footer {
+      padding: 9px 12px; border-top: 1px solid var(--border-line);
+      background: #0a101d; display: flex; align-items: center; justify-content: space-between;
+      font-size: 10px; color: var(--text-muted); flex-shrink: 0;
+    }
+
+    /* =========================================================
+       ATURAN RESPONSIF KHUSUS PONSEL (MOBILE VIEWPORT <= 768px)
+       ========================================================= */
+    @media (max-width: 768px) {
+      :root { --header-h: 50px; }
+      .top-header { padding: 0 8px; }
+      .brand-logo { display: none; }
+      .brand-text p { display: none; }
+      .brand-text h1 { font-size: 12px; }
+      .hdr-btn { padding: 5px 8px; font-size: 10px; }
+      .left-drawer { width: 88vw; max-width: 360px; }
+      .cam-preset-bar { left: 42px !important; max-width: calc(100vw - 175px) !important; top: 10px; padding: 4px 7px; }
+      .elev-legend { top: 10px; right: 8px; width: 120px; padding: 6px 8px; font-size: 9px; }
+      .bottom-status-bar { left: 8px !important; right: 8px; bottom: 8px; }
+      .hide-on-mobile { display: none !important; }
+      .status-pill { width: 100%; justify-content: space-between; font-size: 9.5px; padding: 5px 8px; }
+    }
   </style>
 </head>
 <body>
 
-  <!-- Kanvas WebGL -->
-  <div id="map3d"></div>
-  <div id="loadingDtm">Memproses DTM 3D...</div>
-
-  <!-- Panel Kontrol Kanan Atas -->
-  <div class="control-panel">
-    <div class="panel-title">
-      <span>Triniti Digital Twin 3D</span>
-      <a href="index.html" class="btn-2d-mode">Kembali ke 2D</a>
-    </div>
-
-    <!-- Navigasi Sudut Pandang (Camera Pitch & Bearing) -->
-    <div class="nav-btn-group">
-      <button class="nav-btn" onclick="map.easeTo({pitch: 60, bearing: 45, duration: 1500})">Mode Burung (60°)</button>
-      <button class="nav-btn" onclick="map.easeTo({pitch: 0, bearing: 0, duration: 1500})">Mata Angin (0°)</button>
-    </div>
-
-    <!-- Sakelar Layer 3D -->
-    <div class="layer-group">
-      <div class="layer-row">
-        <label>Ortofoto Permukaan 3D (Periode 3)</label>
-        <input type="checkbox" id="chkOrtho" checked onchange="toggleLayer('ortho-layer', this.checked)">
-      </div>
-      <div class="layer-row">
-        <label>Garis Kontur Mayor (Interval 1m)</label>
-        <input type="checkbox" id="chkContour" checked onchange="toggleLayer('contour-line', this.checked)">
-      </div>
-      <div class="layer-row">
-        <label>Rencana Jalan (ROW)</label>
-        <input type="checkbox" id="chkRow" checked onchange="toggleLayer('row-line', this.checked)">
+  <!-- 1. HEADER UTAMA ATAS -->
+  <header class="top-header">
+    <div class="header-left">
+      <button class="btn-hamburger" id="btnToggleSidebar" title="Buka / Tutup Panel">☰</button>
+      <div class="brand-logo">3D</div>
+      <div class="brand-text">
+        <h1>
+          <span>Digital Twin 3D</span>
+          <span class="badge-status" id="dtmStatusBadge">SIAP</span>
+        </h1>
+        <p>Topografi DTM Agisoft, Overlay Orthomosaic, Cut-Fill & BIM</p>
       </div>
     </div>
 
-    <!-- Alat Analisis Elevasi & Cut-Fill -->
-    <div class="calc-box">
-      <div class="calc-title">📐 Kalkulator Elevasi & Cut-Fill 3D</div>
-      <div style="font-size:10px; color:#94a3b8; margin-bottom:8px; line-height:1.4;">
-        Catatan: Menggunakan DTM asli dari file <b>dtm_web.tif</b> (49MB). Analisis memakan waktu 1-2 detik tergantung performa GPU/RAM.
-      </div>
-      <div class="calc-input-group">
-        <span style="font-size:11px;">Target Elevasi (mdpl):</span>
-        <input type="number" id="targetElev" value="115.0" step="0.5">
-      </div>
-      
-      <button class="btn-calc" id="btnSimulateCalc">Simulasikan Hitung Area Tengah Peta</button>
+    <div class="header-right">
+      <!-- TOMBOL SHORTCUT KEMBALI KE WEBGIS 2D -->
+      <a href="index.html" class="hdr-btn btn-2d-switch" title="Kembali ke WebGIS Monitoring 2D">
+        🗺️ Mode 2D
+      </a>
+      <label class="hdr-btn primary" title="Pilih file dtm_web.tif jika dibuka secara lokal">
+        📂 1. Pilih DTM
+        <input type="file" id="fileInputDtm" accept=".tif,.tiff" style="display:none;" />
+      </label>
+      <label class="hdr-btn cyan" title="Pilih folder 'rgb pemetaan 3' jika dibuka secara lokal">
+        📁 2. Folder Ortho
+        <input type="file" id="folderInputOrthoHeader" webkitdirectory directory multiple style="display:none;" />
+      </label>
+      <button class="hdr-btn" id="btnFullscreen" title="Layar Penuh">⛶</button>
+    </div>
+  </header>
 
-      <div class="result-grid">
-        <div class="res-box">
-          <div class="res-val text-cut" id="resCut">0 m³</div>
-          <div class="res-lbl">Galian (Cut)</div>
+  <!-- 2. WADAH UTAMA -->
+  <div class="main-wrapper">
+
+    <!-- SIDEBAR KIRI -->
+    <aside class="left-drawer" id="leftDrawer">
+      <div class="drawer-tabs">
+        <button class="d-tab active" data-tab="tabTerrain">⛰️ Topografi</button>
+        <button class="d-tab" data-tab="tabCutFill">📐 Cut & Fill</button>
+        <button class="d-tab" data-tab="tabProfile">📈 Profil 3D</button>
+        <button class="d-tab" data-tab="tabBim">🏗️ Model BIM</button>
+      </div>
+
+      <div class="drawer-content">
+
+        <!-- TAB 1: TOPOGRAFI 3D, OVERLAY ORTHOMOSAIC & KONTUR -->
+        <div class="tab-pane active" id="tabTerrain">
+          <div class="pane-banner">
+            <div>
+              <div class="pane-banner-title">Kontrol Topografi & Orthomosaic</div>
+              <div class="pane-banner-sub">Otomatis di GitHub Pages / Manual di Lokal</div>
+            </div>
+            <a href="index.html" class="pane-badge" style="text-decoration:none;">🗺️ KE 2D ➔</a>
+          </div>
+
+          <div class="menu-card">
+            <div class="menu-card-header">
+              <span>📂 1. Data Elevasi (DTM)</span>
+              <span style="color:var(--accent-blue); font-size:10px;" id="elevRangeLabel">165m - 284m</span>
+            </div>
+            <label class="action-btn green">
+              📂 Pilih Berkas dtm_web.tif (Mode Lokal)
+              <input type="file" id="fileInputDtmSidebar" accept=".tif,.tiff" style="display:none;" />
+            </label>
+            <div class="kpi-grid">
+              <div class="kpi-box">
+                <div class="kpi-val" id="kpiMinElev">165.0 m</div>
+                <div class="kpi-lbl">Elevasi Terendah (Min)</div>
+              </div>
+              <div class="kpi-box">
+                <div class="kpi-val" id="kpiMaxElev" style="color:var(--accent-orange);">284.0 m</div>
+                <div class="kpi-lbl">Elevasi Tertinggi (Max)</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="menu-card">
+            <div class="menu-card-header">
+              <span>🖼️ 2. Overlay Orthomosaic Drone</span>
+              <span id="orthoStatusLabel" style="color:var(--accent-amber); font-size:9.5px;">Memuat Otomatis...</span>
+            </div>
+
+            <div class="field-row"><span>Sumber Folder Ubin (GitHub Pages):</span></div>
+            <select id="selectHttpOrthoFolder" class="custom-select">
+              <option value="rgb pemetaan 3" selected>Ortofoto Drone - Periode 3 (Terbaru)</option>
+              <option value="rgb pemetaan 2">Ortofoto Drone - Periode 2 (Sebelumnya)</option>
+            </select>
+
+            <label class="action-btn green">
+              📁 Pilih Folder "rgb pemetaan 3" (Mode Lokal)
+              <input type="file" id="folderInputOrthoSidebar" webkitdirectory directory multiple style="display:none;" />
+            </label>
+
+            <label class="action-btn">
+              🖼️ Atau Pilih File Gambar/Ortho (.tif / .png / .jpg)
+              <input type="file" id="fileInputOrthoSidebar" accept=".tif,.tiff,.png,.jpg,.jpeg,.webp" style="display:none;" />
+            </label>
+
+            <div class="field-row" style="margin-top:4px;">
+              <span>Campuran Warna (0% Foto Asli — 100% DEM):</span>
+              <b id="blendValText" style="color:var(--accent-blue);">0% (Foto Murni)</b>
+            </div>
+            <input type="range" id="sliderBlend" class="range-slider" min="0" max="100" step="5" value="0" />
+          </div>
+
+          <div class="menu-card">
+            <div class="menu-card-header">
+              <span>🎨 3. Skala Vertikal & Garis Kontur</span>
+              <span id="meshResBadge">240x240 GRID</span>
+            </div>
+
+            <div class="field-row"><span>Mode Tampilan Permukaan:</span></div>
+            <select id="selectSurfaceMode" class="custom-select">
+              <option value="ortho_drape" selected>Orthomosaic Drone di Atas DEM 3D</option>
+              <option value="hypsometric">Peta Warna Ketinggian (DEM Style)</option>
+              <option value="cutfill_map">Peta Zona Cut (Merah) & Fill (Hijau)</option>
+            </select>
+
+            <div class="field-row" style="margin-top:4px;">
+              <span>Pengali Tinggi Bukit (Exaggeration Z):</span>
+              <b id="exagValText" style="color:var(--accent-blue);">1.3x</b>
+            </div>
+            <input type="range" id="sliderExag" class="range-slider" min="0.5" max="3.0" step="0.1" value="1.3" />
+
+            <div class="switch-row">
+              <span>Garis Kontur 3D Mulus di Atas Permukaan</span>
+              <label class="switch">
+                <input type="checkbox" id="chkContours3D" checked>
+                <span class="slider-toggle"></span>
+              </label>
+            </div>
+
+            <div class="field-row">
+              <span>Interval Garis Kontur:</span>
+              <select id="selectContourInterval" class="custom-select" style="width:130px; padding:4px 8px;">
+                <option value="1">Tiap 1.0 Meter</option>
+                <option value="2" selected>Tiap 2.0 Meter</option>
+                <option value="5">Tiap 5.0 Meter</option>
+              </select>
+            </div>
+
+            <div class="switch-row">
+              <span>Garis Rencana Jalan (ROW) & Siteplan 3D</span>
+              <label class="switch">
+                <input type="checkbox" id="chkVectors3D" checked>
+                <span class="slider-toggle"></span>
+              </label>
+            </div>
+
+            <div class="switch-row">
+              <span>Mode Tanah Transparan (X-Ray Bawah Tanah)</span>
+              <label class="switch">
+                <input type="checkbox" id="chkXray">
+                <span class="slider-toggle"></span>
+              </label>
+            </div>
+          </div>
         </div>
-        <div class="res-box">
-          <div class="res-val text-fill" id="resFill">0 m³</div>
-          <div class="res-lbl">Timbunan (Fill)</div>
+
+        <!-- TAB 2: KALKULATOR CUT & FILL 3D INTERAKTIF -->
+        <div class="tab-pane" id="tabCutFill">
+          <div class="pane-banner">
+            <div>
+              <div class="pane-banner-title">Kalkulator Volume Cut & Fill 3D</div>
+              <div class="pane-banner-sub">Integrasi Prismoidal Grid DTM & Simulasi Grading</div>
+            </div>
+            <span class="pane-badge">PRESISI PIXEL</span>
+          </div>
+
+          <div class="menu-card">
+            <div class="menu-card-header">
+              <span>1. Tentukan Area & Elevasi Rencana</span>
+              <span id="polyPtsBadge" style="color:var(--accent-amber);">Seluruh Area</span>
+            </div>
+
+            <button class="action-btn" id="btnDrawCutFillPoly">✏️ Gambar Poligon Area Kerja di Atas Bukit 3D</button>
+            <button class="action-btn amber" id="btnResetPoly" style="padding:5px; font-size:10.5px;">🔄 Gunakan Seluruh Area / Reset Poligon</button>
+
+            <div class="field-row" style="margin-top:6px;">
+              <span>Elevasi Rencana / Target Grading (mdpl):</span>
+              <b id="targetElevText" style="color:var(--accent-green);">220.0 m</b>
+            </div>
+            <input type="number" id="inputTargetElev" class="custom-input" value="220.0" step="0.5" />
+            <input type="range" id="sliderTargetElev" class="range-slider" min="160" max="290" step="0.5" value="220.0" />
+
+            <div class="switch-row">
+              <span>Tampilkan Bidang Air Elevasi Rencana (Biru)</span>
+              <label class="switch">
+                <input type="checkbox" id="chkTargetPlane">
+                <span class="slider-toggle"></span>
+              </label>
+            </div>
+
+            <button class="action-btn green" id="btnCalcVolume">🧮 Hitung & Warnai Zona Cut-Fill</button>
+          </div>
+
+          <div class="menu-card">
+            <div class="menu-card-header">
+              <span>2. Hasil Perhitungan Kubikasi Tanah</span>
+              <span>M³</span>
+            </div>
+            <div class="kpi-grid">
+              <div class="kpi-box">
+                <div class="kpi-val" id="resCutVol" style="color:var(--accent-rose);">0 m³</div>
+                <div class="kpi-lbl">Volume Galian (Cut)</div>
+              </div>
+              <div class="kpi-box">
+                <div class="kpi-val" id="resFillVol" style="color:var(--accent-green);">0 m³</div>
+                <div class="kpi-lbl">Volume Timbunan (Fill)</div>
+              </div>
+              <div class="kpi-box">
+                <div class="kpi-val" id="resAreaVal" style="color:var(--accent-purple);">0 m²</div>
+                <div class="kpi-lbl">Luas Area Terhitung</div>
+              </div>
+              <div class="kpi-box">
+                <div class="kpi-val" id="resNetVol" style="color:var(--accent-blue);">0 m³</div>
+                <div class="kpi-lbl">Neraca Tanah (Cut - Fill)</div>
+              </div>
+            </div>
+
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-top:4px;">
+              <button class="action-btn amber" id="btnApplyGrading">🚜 Ratakan Tanah 3D (Grading)</button>
+              <button class="action-btn" id="btnRestoreTerrain">↩️ Kembalikan Kontur Asli</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- TAB 3: ANALISIS KETINGGIAN & PROFIL MELINTANG -->
+        <div class="tab-pane" id="tabProfile">
+          <div class="pane-banner">
+            <div>
+              <div class="pane-banner-title">Inspeksi Ketinggian & Profil Lereng</div>
+              <div class="pane-banner-sub">Potongan Melintang (Cross-Section) Antartitik</div>
+            </div>
+            <span class="pane-badge">RAYCAST 3D</span>
+          </div>
+
+          <div class="menu-card">
+            <div class="menu-card-header">
+              <span>🎯 Sensor Kursor / Sentuhan Real-Time</span>
+              <span>LIVE</span>
+            </div>
+            <div class="kpi-grid">
+              <div class="kpi-box">
+                <div class="kpi-val" id="liveElevVal">-- mdpl</div>
+                <div class="kpi-lbl">Elevasi Titik (Z)</div>
+              </div>
+              <div class="kpi-box">
+                <div class="kpi-val" id="liveSlopeVal" style="color:var(--accent-amber);">-- ° (--%)</div>
+                <div class="kpi-lbl">Kemiringan Lereng (Slope)</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="menu-card">
+            <div class="menu-card-header">
+              <span>📈 Grafik Potongan Melintang (A — B)</span>
+              <span id="profileDistLabel" style="color:var(--accent-blue);">Jarak: 0 m</span>
+            </div>
+            <button class="action-btn" id="btnDrawProfile">📏 Ketuk 2 Titik (A & B) di Bukit 3D</button>
+            <div style="position:relative; height:170px; width:100%; margin-top:4px;">
+              <canvas id="profileChart"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <!-- TAB 4: INTEGRASI MODEL BIM 3D (.GLB / .GLTF & MAKET) -->
+        <div class="tab-pane" id="tabBim">
+          <div class="pane-banner">
+            <div>
+              <div class="pane-banner-title">Integrasi BIM 3D (Revit / Civil 3D)</div>
+              <div class="pane-banner-sub">Muat Model .GLB/.glTF atau Maket Struktur di Atas DTM</div>
+            </div>
+            <span class="pane-badge">AKTIF</span>
+          </div>
+
+          <div class="menu-card">
+            <div class="menu-card-header">
+              <span>🏗️ Masukkan Model BIM ke Atas Topografi</span>
+              <span>GLB / GLTF</span>
+            </div>
+            <label class="action-btn green">
+              📦 Unggah File Model BIM (.glb / .gltf)
+              <input type="file" id="fileInputBim" accept=".glb,.gltf" style="display:none;" />
+            </label>
+            <button class="action-btn" id="btnPlaceSampleBim">🏠 Ketuk Peta 3D untuk Taruh Maket Kluster</button>
+          </div>
+
+          <div class="menu-card">
+            <div class="menu-card-header">
+              <span>⚙️ Kalibrasi Posisi & Elevasi Model BIM</span>
+              <button id="btnClearBim" style="background:none;border:none;color:#f43f5e;font-size:10px;cursor:pointer;font-weight:700;">Hapus BIM</button>
+            </div>
+
+            <div class="field-row">
+              <span>Elevasi Dasar Bangunan (Z mdpl):</span>
+              <b id="bimElevText" style="color:var(--accent-blue);">220.0 m</b>
+            </div>
+            <input type="range" id="sliderBimZ" class="range-slider" min="160" max="290" step="0.5" value="220.0" />
+
+            <div class="field-row">
+              <span>Rotasi Arah Bangunan (Bearing °):</span>
+              <b id="bimRotText">0°</b>
+            </div>
+            <input type="range" id="sliderBimRot" class="range-slider" min="0" max="360" step="1" value="0" />
+
+            <div class="field-row">
+              <span>Skala Ukuran Model BIM:</span>
+              <b id="bimScaleText">1.0x</b>
+            </div>
+            <input type="range" id="sliderBimScale" class="range-slider" min="0.2" max="5.0" step="0.1" value="1.0" />
+          </div>
+        </div>
+
+      </div>
+
+      <div class="drawer-footer">
+        <span>🖱️ Sentuh/Klik: Putar & Geser 3D</span>
+        <a href="index.html" style="color:var(--accent-blue); font-weight:700; text-decoration:none;">🗺️ Mode 2D</a>
+      </div>
+    </aside>
+
+    <!-- TAB SAAT SIDEBAR TERTUTUP -->
+    <div class="collapsed-tab" id="collapsedTab" title="Buka Panel 3D">
+      <b>❯</b>
+      <span>Panel 3D</span>
+    </div>
+
+    <!-- KANVAS 3D UTAMA -->
+    <div id="viewport3d">
+      <div id="loadingOverlay">
+        <div class="spinner"></div>
+        <div style="font-size:13px; font-weight:700; color:var(--accent-blue);" id="loadingMsg">Memproses Data Spasial 3D...</div>
+      </div>
+
+      <div class="cam-preset-bar">
+        <span style="font-size:11px; font-weight:700; color:var(--accent-blue);">🎥 Kamera:</span>
+        <button class="cam-btn" id="camIso">Perspektif 3D</button>
+        <button class="cam-btn" id="camTop">Tampak Atas (90°)</button>
+        <button class="cam-btn" id="camLow">Inspeksi Lereng</button>
+      </div>
+
+      <div class="elev-legend">
+        <div style="font-weight:700; color:#fff; display:flex; justify-content:space-between;">
+          <span>ELEVASI</span>
+          <span style="color:var(--accent-blue);">MDPL</span>
+        </div>
+        <div class="elev-gradient"></div>
+        <div style="display:flex; justify-content:space-between; color:var(--text-muted); font-size:9px;">
+          <span id="legMin">165 m</span>
+          <span id="legMid">224 m</span>
+          <span id="legMax">284 m</span>
+        </div>
+      </div>
+
+      <div class="bottom-status-bar">
+        <div class="status-pill hide-on-mobile">
+          <span id="modeInstruction">💡 Sentuh atau arahkan kursor ke bukit 3D untuk membaca elevasi & kemiringan lereng</span>
+        </div>
+        <div class="status-pill">
+          <span>Elevasi Z: <b id="hudElev" style="color:var(--accent-green);">-- mdpl</b></span>
+          <span>|</span>
+          <span>Slope: <b id="hudSlope" style="color:var(--accent-amber);">--°</b></span>
+          <span class="hide-on-mobile">|</span>
+          <span class="hide-on-mobile" id="hudCoord" style="color:var(--accent-blue);">106.8650° E, -6.5450° S</span>
         </div>
       </div>
     </div>
+
   </div>
 
   <script>
-    // Koordinat tengah proyek
-    const CENTER = [106.865, -6.545]; 
-    
-    // Inisialisasi MapLibre (Mesin WebGL)
-    const map = new maplibregl.Map({
-      container: 'map3d',
-      style: {
-        version: 8,
-        sources: {
-          'osm': { type: 'raster', tiles: ['https://a.tile.openstreetmap.org/{z}/{x}/{y}.png'], tileSize: 256 }
-        },
-        layers: [{ id: 'osm-layer', type: 'raster', source: 'osm', minzoom: 0, maxzoom: 22 }]
-      },
-      center: CENTER,
-      zoom: 16.5,
-      pitch: 60,     // Sudut pandang awal 3D (60 derajat)
-      bearing: -20,  // Rotasi kompas awal
-      maxZoom: 22
-    });
+    // =========================================================
+    // STATE UTAMA ENGINE 3D DIGITAL TWIN
+    // =========================================================
+    const TerrainState = {
+      gridW: 240,
+      gridH: 240,
+      meshWidth: 800,
+      meshHeight: 800,
+      worldWidthMeters: 1400,
+      worldHeightMeters: 1400,
+      bbox: [106.8575, -6.5525, 106.8715, -6.5385],
+      minElev: 165.0,
+      maxElev: 284.0,
+      exaggeration: 1.3,
+      targetElev: 220.0,
+      hypsoBlend: 0.0,
+      httpOrthoFolder: 'rgb pemetaan 3',
+      elevGrid: null,
+      originalElevGrid: null,
+      validMask: null,
+      stitchedOrthoCanvas: null,
+      hasOrthoLoaded: false,
+      cachedFolderTiles: null,
+      surfaceMode: 'ortho_drape',
+      interactionMode: 'inspect',
+      polyPointsWorld: [],
+      profilePointsWorld: []
+    };
 
-    // Kontrol Navigasi Tambahan
-    map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }));
+    const leftDrawer = document.getElementById('leftDrawer');
+    function isMobileScreen() { return window.innerWidth <= 768; }
+    if (isMobileScreen()) {
+      leftDrawer.classList.add('collapsed');
+    }
 
     // =========================================================
-    // FASE 1: Memuat DTM (dtm_web.tif) menggunakan GeoTIFF.js
-    // dan mengubahnya menjadi format Terrain-RGB secara langsung di browser
+    // 1. INISIALISASI SCENE THREE.JS
     // =========================================================
-    async function initTerrainAndLayers() {
-      document.getElementById('loadingDtm').style.display = 'block';
+    const container = document.getElementById('viewport3d');
+    const scene = new THREE.Scene();
+
+    const camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 1, 15000);
+    camera.position.set(0, 620, 860);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+    renderer.setSize(container.clientWidth, container.clientHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    container.appendChild(renderer.domElement);
+
+    const controls = new THREE.OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.06;
+    controls.maxPolarAngle = Math.PI / 2 - 0.01;
+    controls.minDistance = 30;
+    controls.maxDistance = 4500;
+
+    scene.add(new THREE.AmbientLight(0xffffff, 0.78));
+    const sunLight = new THREE.DirectionalLight(0xfffbeb, 0.88);
+    sunLight.position.set(450, 950, 400);
+    scene.add(sunLight);
+
+    const baseGrid = new THREE.GridHelper(1600, 32, 0x1e293b, 0x0f172a);
+    baseGrid.position.y = -4;
+    scene.add(baseGrid);
+
+    let terrainMesh = null;
+    let contourGroup = new THREE.Group();
+    let vector3DGroup = new THREE.Group();
+    let polyDrawGroup = new THREE.Group();
+    let profileDrawGroup = new THREE.Group();
+    let bimGroup = new THREE.Group();
+    let targetPlaneMesh = null;
+
+    scene.add(contourGroup, vector3DGroup, polyDrawGroup, profileDrawGroup, bimGroup);
+
+    const cursorGeo = new THREE.RingGeometry(4, 6.5, 24);
+    cursorGeo.rotateX(-Math.PI / 2);
+    const cursorMarker = new THREE.Mesh(
+      cursorGeo,
+      new THREE.MeshBasicMaterial({ color: 0x38bdf8, side: THREE.DoubleSide, depthTest: false })
+    );
+    cursorMarker.visible = false;
+    scene.add(cursorMarker);
+
+    // =========================================================
+    // 2. FUNGSI PROTEKSI KANVAS & KONVERSI KOORDINAT UTM 48S
+    // =========================================================
+    function isCanvasUntainted(canvas) {
+      if (!canvas) return false;
+      try {
+        canvas.getContext('2d').getImageData(0, 0, 1, 1);
+        return true;
+      } catch (_) {
+        return false;
+      }
+    }
+
+    function utm48SToLonLat(easting, northing) {
+      const a = 6378137.0, e = 0.0818191908, k0 = 0.9996;
+      const x = easting - 500000.0;
+      const y = northing - 10000000.0;
+      const m = y / k0;
+      const mu = m / (a * (1 - e * e / 4 - 3 * Math.pow(e, 4) / 64));
+      const e1 = (1 - Math.sqrt(1 - e * e)) / (1 + Math.sqrt(1 - e * e));
+      const phi1 = mu + (3 * e1 / 2 - 27 * Math.pow(e1, 3) / 32) * Math.sin(2 * mu)
+                      + (21 * e1 * e1 / 16 - 55 * Math.pow(e1, 4) / 32) * Math.sin(4 * mu);
+      const n1 = a / Math.sqrt(1 - Math.pow(e * Math.sin(phi1), 2));
+      const t1 = Math.pow(Math.tan(phi1), 2);
+      const c1 = (e * e / (1 - e * e)) * Math.pow(Math.cos(phi1), 2);
+      const r1 = a * (1 - e * e) / Math.pow(1 - Math.pow(e * Math.sin(phi1), 2), 1.5);
+      const d = x / (n1 * k0);
+
+      const latRad = phi1 - (n1 * Math.tan(phi1) / r1) * (d * d / 2 - (5 + 3 * t1 + 10 * c1 - 4 * c1 * c1) * Math.pow(d, 4) / 24);
+      const lonRad = (d - (1 + 2 * t1 + c1) * Math.pow(d, 3) / 6) / Math.cos(phi1);
+      const lon0 = ((48 - 1) * 6 - 180 + 3) * Math.PI / 180;
+      return [(lon0 + lonRad) * 180 / Math.PI, latRad * 180 / Math.PI];
+    }
+
+    function normalizeBboxToLonLat(rawBbox) {
+      if (Math.abs(rawBbox[0]) > 180) {
+        const [minLon, minLat] = utm48SToLonLat(rawBbox[0], rawBbox[1]);
+        const [maxLon, maxLat] = utm48SToLonLat(rawBbox[2], rawBbox[3]);
+        return {
+          bbox: [minLon, minLat, maxLon, maxLat],
+          widthM: Math.max(200, rawBbox[2] - rawBbox[0]),
+          heightM: Math.max(200, rawBbox[3] - rawBbox[1])
+        };
+      }
+      const midLat = (rawBbox[1] + rawBbox[3]) / 2;
+      return {
+        bbox: rawBbox,
+        widthM: Math.max(200, (rawBbox[2] - rawBbox[0]) * 111320 * Math.cos(midLat * Math.PI / 180)),
+        heightM: Math.max(200, (rawBbox[3] - rawBbox[1]) * 110540)
+      };
+    }
+
+    function elevToWorldY(elev) {
+      return (elev - TerrainState.minElev) * TerrainState.exaggeration;
+    }
+
+    function worldYToElev(worldY) {
+      return (worldY / TerrainState.exaggeration) + TerrainState.minElev;
+    }
+
+    // =========================================================
+    // 3. PEMBACA GEOTIFF DTM (OTOMATIS DI GITHUB & LOKAL)
+    // =========================================================
+    async function loadDtmFromSource(blobOrBuffer, sourceLabel, isBlob = true) {
+      const overlay = document.getElementById('loadingOverlay');
+      const msg = document.getElementById('loadingMsg');
+      overlay.style.display = 'flex';
+      msg.textContent = `Membaca kontur elevasi dari ${sourceLabel}...`;
 
       try {
-        // PERHATIAN: Jika dtm_web.tif gagal dimuat via file:///, 
-        // Anda harus menjalankannya via Localhost (Live Server) atau GitHub Pages.
-        const tiff = await GeoTIFF.fromUrl('dtm_web.tif');
-        const image = await tiff.getImage();
-        const rasterData = await image.readRasters();
-        
-        // ... (Logika pembentukan ubin Terrain-RGB dari data piksel DTM akan
-        // diimplementasikan penuh pada tahap selanjutnya jika DTM berhasil dipanggil) ...
-        
-        console.log("DTM Berhasil Dibaca! Ukuran Pixel:", image.getWidth(), "x", image.getHeight());
-        
+        const tiff = isBlob
+          ? await GeoTIFF.fromBlob(blobOrBuffer)
+          : await GeoTIFF.fromArrayBuffer(blobOrBuffer);
+
+        const baseImg = await tiff.getImage(0);
+        const norm = normalizeBboxToLonLat(baseImg.getBoundingBox());
+        TerrainState.bbox = norm.bbox;
+        TerrainState.worldWidthMeters = norm.widthM;
+        TerrainState.worldHeightMeters = norm.heightM;
+
+        const targetW = isMobileScreen() ? 180 : 240;
+        const aspect = TerrainState.worldHeightMeters / TerrainState.worldWidthMeters;
+        const targetH = Math.max(120, Math.min(260, Math.round(targetW * aspect)));
+
+        const rasters = await baseImg.readRasters({ width: targetW, height: targetH });
+        const rawBand = rasters[0];
+
+        const grid = new Float32Array(targetW * targetH);
+        const mask = new Uint8Array(targetW * targetH);
+        let minE = Infinity, maxE = -Infinity;
+
+        for (let i = 0; i < rawBand.length; i++) {
+          const z = rawBand[i];
+          if (z !== undefined && !isNaN(z) && z > 20 && z < 4000) {
+            grid[i] = z;
+            mask[i] = 1;
+            if (z < minE) minE = z;
+            if (z > maxE) maxE = z;
+          } else {
+            mask[i] = 0;
+          }
+        }
+
+        if (!isFinite(minE) || !isFinite(maxE)) throw new Error('Data elevasi tidak ditemukan di dalam file ini.');
+
+        for (let i = 0; i < grid.length; i++) {
+          if (mask[i] === 0) grid[i] = minE;
+        }
+        for (let pass = 0; pass < 6; pass++) {
+          for (let y = 1; y < targetH - 1; y++) {
+            for (let x = 1; x < targetW - 1; x++) {
+              const idx = y * targetW + x;
+              if (mask[idx] === 0) {
+                grid[idx] = (grid[idx - 1] + grid[idx + 1] + grid[idx - targetW] + grid[idx + targetW]) * 0.25;
+              }
+            }
+          }
+        }
+
+        TerrainState.gridW = targetW;
+        TerrainState.gridH = targetH;
+        TerrainState.meshWidth = 800;
+        TerrainState.meshHeight = 800 * (targetH / targetW);
+        TerrainState.elevGrid = grid;
+        TerrainState.originalElevGrid = new Float32Array(grid);
+        TerrainState.validMask = mask;
+        TerrainState.minElev = +minE.toFixed(1);
+        TerrainState.maxElev = +maxE.toFixed(1);
+        TerrainState.targetElev = +((minE + maxE) * 0.48).toFixed(1);
+
+        document.getElementById('dtmStatusBadge').textContent = `DTM AKTIF`;
+        document.getElementById('meshResBadge').textContent = `${targetW}x${targetH} GRID`;
+
+        updateElevationUI();
+        buildTerrainMesh3D();
+        calculateCutFillVolume();
+
+        if (TerrainState.cachedFolderTiles) {
+          stitchTilesFromLocalFolderList(TerrainState.cachedFolderTiles);
+        } else if (window.location.protocol.startsWith('http')) {
+          stitchOrthoTilesOverHttp(TerrainState.httpOrthoFolder);
+          loadVectorsOnto3D();
+        }
       } catch (err) {
-        console.warn("GeoTIFF.js memerlukan Web Server (Live Server/GitHub Pages) untuk membaca dtm_web.tif sebesar 49MB. Menjalankan fallback Terrain...");
+        console.warn('Gagal memproses DTM:', err.message);
+      } finally {
+        overlay.style.display = 'none';
+      }
+    }
+
+    // =========================================================
+    // 4. OVERLAY ORTHOMOSAIC OTOMATIS (GITHUB PAGES HTTP/HTTPS)
+    //    & PEMILIH FOLDER LOKAL (FILE:///)
+    // =========================================================
+    function stitchOrthoTilesOverHttp(folder) {
+      if (!window.location.protocol.startsWith('http')) return;
+      const statusEl = document.getElementById('orthoStatusLabel');
+      statusEl.textContent = `Memuat ${folder}...`;
+
+      const [minLon, minLat, maxLon, maxLat] = TerrainState.bbox;
+      const zoom = 18;
+      const lon2tileF = (lon, z) => ((lon + 180) / 360) * Math.pow(2, z);
+      const lat2tileF = (lat, z) => (
+        (1 - Math.log(Math.tan(lat * Math.PI / 180) + 1 / Math.cos(lat * Math.PI / 180)) / Math.PI) / 2
+      ) * Math.pow(2, z);
+
+      const xMinF = lon2tileF(minLon, zoom), xMaxF = lon2tileF(maxLon, zoom);
+      const yMinF = lat2tileF(maxLat, zoom), yMaxF = lat2tileF(minLat, zoom);
+      const txStart = Math.floor(xMinF), txEnd = Math.floor(xMaxF);
+      const tyStart = Math.floor(yMinF), tyEnd = Math.floor(yMaxF);
+      if (txEnd - txStart > 18 || tyEnd - tyStart > 18) return;
+
+      const canvas = document.createElement('canvas');
+      canvas.width = isMobileScreen() ? 1024 : 2048;
+      canvas.height = isMobileScreen() ? 1024 : 2048;
+      const ctx = canvas.getContext('2d');
+      const spanX = Math.max(0.0001, xMaxF - xMinF), spanY = Math.max(0.0001, yMaxF - yMinF);
+      let count = 0;
+
+      for (let tx = txStart; tx <= txEnd; tx++) {
+        for (let ty = tyStart; ty <= tyEnd; ty++) {
+          const img = new Image();
+          img.crossOrigin = 'anonymous';
+          img.onload = () => {
+            ctx.drawImage(
+              img,
+              ((tx - xMinF) / spanX) * canvas.width,
+              ((ty - yMinF) / spanY) * canvas.height,
+              (1 / spanX) * canvas.width + 1.5,
+              (1 / spanY) * canvas.height + 1.5
+            );
+            count++;
+            if (isCanvasUntainted(canvas)) {
+              TerrainState.stitchedOrthoCanvas = canvas;
+              TerrainState.hasOrthoLoaded = true;
+              statusEl.textContent = `Orthomosaic Aktif (${count} ubin)`;
+              statusEl.style.color = '#4ade80';
+              if (count === 1 || count % 4 === 0) refreshTerrainTextureOnly();
+            }
+          };
+          img.onerror = () => {
+            if (!img.dataset.retriedTms) {
+              img.dataset.retriedTms = '1';
+              const tmsY = (Math.pow(2, zoom) - 1) - ty;
+              img.src = `${folder}/${zoom}/${tx}/${tmsY}.png`;
+            }
+          };
+          img.src = `${folder}/${zoom}/${tx}/${ty}.png`;
+        }
+      }
+    }
+
+    function stitchTilesFromLocalFolderList(fileList) {
+      TerrainState.cachedFolderTiles = fileList;
+      const statusEl = document.getElementById('orthoStatusLabel');
+      const [minLon, minLat, maxLon, maxLat] = TerrainState.bbox;
+
+      const tilesByZoom = {};
+      const regex = /(\d+)[\/\\](\d+)[\/\\](\d+)\.(png|jpg|jpeg|webp)$/i;
+
+      for (let i = 0; i < fileList.length; i++) {
+        const f = fileList[i];
+        const path = f.webkitRelativePath || f.name;
+        const m = path.match(regex);
+        if (m) {
+          const z = parseInt(m[1], 10);
+          const x = parseInt(m[2], 10);
+          const y = parseInt(m[3], 10);
+          if (!tilesByZoom[z]) tilesByZoom[z] = [];
+          tilesByZoom[z].push({ z, x, y, file: f });
+        }
       }
 
-      document.getElementById('loadingDtm').style.display = 'none';
+      const zooms = Object.keys(tilesByZoom).map(Number).sort((a, b) => a - b);
+      if (zooms.length === 0) {
+        alert('Tidak ditemukan struktur ubin {z}/{x}/{y}.png di dalam folder yang dipilih.');
+        return;
+      }
 
-      map.on('load', () => {
-        // =========================================================
-        // FASE 2: Menambahkan Topografi 3D Bawaan MapLibre (Fallback)
-        // =========================================================
-        map.addSource('terrain-source', {
-          type: 'raster-dem',
-          url: 'https://demotiles.maplibre.org/terrain-tiles/tiles.json', // Menggunakan DEM Publik sementara
-          tileSize: 256
-        });
-        map.setTerrain({ source: 'terrain-source', exaggeration: 2.5 }); // exaggeration = Skala tinggi bukit (Z)
+      let chosenZ = zooms[zooms.length - 1];
+      if (tilesByZoom[19]) chosenZ = 19;
+      else if (tilesByZoom[18]) chosenZ = 18;
+      else if (tilesByZoom[17]) chosenZ = 17;
 
-        // =========================================================
-        // FASE 3: Menyelimutkan Ortofoto (rgb pemetaan 3) di atas 3D
-        // =========================================================
-        map.addSource('ortho-source', {
-          type: 'raster',
-          tiles: ['rgb pemetaan 3/{z}/{x}/{y}.png'], // Memanggil tile PNG Anda
-          tileSize: 256,
-          maxzoom: 21
-        });
-        map.addLayer({
-          id: 'ortho-layer',
-          type: 'raster',
-          source: 'ortho-source'
-        });
+      const tileArr = tilesByZoom[chosenZ];
+      const lon2tileF = (lon, z) => ((lon + 180) / 360) * Math.pow(2, z);
+      const lat2tileF = (lat, z) => (
+        (1 - Math.log(Math.tan(lat * Math.PI / 180) + 1 / Math.cos(lat * Math.PI / 180)) / Math.PI) / 2
+      ) * Math.pow(2, z);
 
-        // =========================================================
-        // FASE 4: Menambahkan Garis Kontur (kontur.geojson)
-        // =========================================================
-        map.addSource('contour-source', {
-          type: 'geojson',
-          data: 'kontur.geojson'
-        });
-        map.addLayer({
-          id: 'contour-line',
-          type: 'line',
-          source: 'contour-source',
-          paint: {
-            'line-color': '#f59e0b', // Warna oranye
-            'line-width': 1.5,
-            'line-opacity': 0.7
+      let xMinF = lon2tileF(minLon, chosenZ);
+      let xMaxF = lon2tileF(maxLon, chosenZ);
+      let yMinF = lat2tileF(maxLat, chosenZ);
+      let yMaxF = lat2tileF(minLat, chosenZ);
+
+      const sampleY = tileArr[0].y;
+      const tmsYMin = (Math.pow(2, chosenZ) - 1) - yMaxF;
+      const isTms = Math.abs(sampleY - tmsYMin) < Math.abs(sampleY - yMinF);
+
+      const canvas = document.createElement('canvas');
+      canvas.width = isMobileScreen() ? 1024 : 2048;
+      canvas.height = isMobileScreen() ? 1024 : 2048;
+      const ctx = canvas.getContext('2d');
+
+      const spanX = Math.max(0.0001, xMaxF - xMinF);
+      const spanY = Math.max(0.0001, yMaxF - yMinF);
+      let drawnCount = 0;
+
+      const matchingTiles = tileArr.filter(t => {
+        const tyXyz = isTms ? ((Math.pow(2, chosenZ) - 1) - t.y) : t.y;
+        return (t.x + 1 >= xMinF && t.x <= xMaxF && tyXyz + 1 >= yMinF && tyXyz <= yMaxF);
+      });
+
+      const tilesToRender = matchingTiles.length > 0 ? matchingTiles : tileArr.slice(0, 120);
+      statusEl.textContent = `Menyulam ${tilesToRender.length} ubin (Z${chosenZ})...`;
+
+      tilesToRender.forEach(t => {
+        const tyXyz = isTms ? ((Math.pow(2, chosenZ) - 1) - t.y) : t.y;
+        const url = URL.createObjectURL(t.file);
+        const img = new Image();
+        img.onload = () => {
+          const drawX = ((t.x - xMinF) / spanX) * canvas.width;
+          const drawY = ((tyXyz - yMinF) / spanY) * canvas.height;
+          const drawW = (1 / spanX) * canvas.width + 1.5;
+          const drawH = (1 / spanY) * canvas.height + 1.5;
+
+          ctx.drawImage(img, drawX, drawY, drawW, drawH);
+          URL.revokeObjectURL(url);
+          drawnCount++;
+
+          if (drawnCount === 1 || drawnCount % 8 === 0 || drawnCount === tilesToRender.length) {
+            if (isCanvasUntainted(canvas)) {
+              TerrainState.stitchedOrthoCanvas = canvas;
+              TerrainState.hasOrthoLoaded = true;
+              TerrainState.surfaceMode = 'ortho_drape';
+              document.getElementById('selectSurfaceMode').value = 'ortho_drape';
+              statusEl.textContent = `Orthomosaic Aktif (${drawnCount} ubin Z${chosenZ})`;
+              statusEl.style.color = '#4ade80';
+              refreshTerrainTextureOnly();
+            }
           }
-        });
-        
-        // Label Angka Elevasi Kontur (ELEV)
-        map.addLayer({
-          id: 'contour-label',
-          type: 'symbol',
-          source: 'contour-source',
-          layout: {
-            'symbol-placement': 'line',
-            'text-field': ['get', 'ELEV'], // Membaca kolom ELEV dari QGIS
-            'text-font': ['Open Sans Semibold'],
-            'text-size': 11,
-            'text-allow-overlap': false
-          },
-          paint: {
-            'text-color': '#fff',
-            'text-halo-color': 'rgba(0,0,0,0.8)',
-            'text-halo-width': 1.5
-          }
-        });
-
-        // =========================================================
-        // FASE 5: Menambahkan Garis ROW (row.geojson)
-        // =========================================================
-        map.addSource('row-source', { type: 'geojson', data: 'row.geojson' });
-        map.addLayer({
-          id: 'row-line',
-          type: 'line',
-          source: 'row-source',
-          paint: { 'line-color': '#f43f5e', 'line-width': 4 }
-        });
+        };
+        img.src = url;
       });
     }
 
-    // Fungsi Sakelar Checklist Layer
-    function toggleLayer(layerId, isVisible) {
-      if (!map.getLayer(layerId)) return;
-      map.setLayoutProperty(layerId, 'visibility', isVisible ? 'visible' : 'none');
-      if (layerId === 'contour-line') map.setLayoutProperty('contour-label', 'visibility', isVisible ? 'visible' : 'none');
+    async function loadLocalOrthoFile(file) {
+      const overlay = document.getElementById('loadingOverlay');
+      const msg = document.getElementById('loadingMsg');
+      const statusEl = document.getElementById('orthoStatusLabel');
+      overlay.style.display = 'flex';
+      msg.textContent = `Membaca Orthomosaic ${file.name}...`;
+
+      try {
+        if (file.name.toLowerCase().endsWith('.tif') || file.name.toLowerCase().endsWith('.tiff')) {
+          const tiff = await GeoTIFF.fromBlob(file);
+          const baseImg = await tiff.getImage(0);
+          if (baseImg.getSamplesPerPixel() === 1) {
+            overlay.style.display = 'none';
+            await loadDtmFromSource(file, file.name, true);
+            return;
+          }
+
+          const imgCount = await tiff.getImageCount();
+          let readImg = baseImg;
+          for (let i = 1; i < imgCount; i++) {
+            const ovr = await tiff.getImage(i);
+            const w = ovr.getWidth();
+            if (w >= 1024 && w <= 3072) { readImg = ovr; break; }
+            else if (w < readImg.getWidth() && w >= 512) { readImg = ovr; }
+          }
+
+          const outW = 1024, outH = 1024;
+          const rasters = await readImg.readRasters({ width: outW, height: outH });
+          const rBand = rasters[0], gBand = rasters[1] || rasters[0], bBand = rasters[2] || rasters[0];
+
+          const canvas = document.createElement('canvas');
+          canvas.width = outW; canvas.height = outH;
+          const ctx = canvas.getContext('2d');
+          const imgData = ctx.createImageData(outW, outH);
+          for (let i = 0; i < outW * outH; i++) {
+            const p = i * 4;
+            imgData.data[p] = rBand[i];
+            imgData.data[p + 1] = gBand[i];
+            imgData.data[p + 2] = bBand[i];
+            imgData.data[p + 3] = 255;
+          }
+          ctx.putImageData(imgData, 0, 0);
+
+          TerrainState.stitchedOrthoCanvas = canvas;
+          TerrainState.hasOrthoLoaded = true;
+          TerrainState.surfaceMode = 'ortho_drape';
+          document.getElementById('selectSurfaceMode').value = 'ortho_drape';
+          statusEl.textContent = `File: ${file.name}`;
+          statusEl.style.color = '#4ade80';
+          refreshTerrainTextureOnly();
+        } else {
+          const url = URL.createObjectURL(file);
+          const image = new Image();
+          image.onload = () => {
+            const canvas = document.createElement('canvas');
+            canvas.width = 1024; canvas.height = 1024;
+            canvas.getContext('2d').drawImage(image, 0, 0, 1024, 1024);
+            URL.revokeObjectURL(url);
+            if (isCanvasUntainted(canvas)) {
+              TerrainState.stitchedOrthoCanvas = canvas;
+              TerrainState.hasOrthoLoaded = true;
+              TerrainState.surfaceMode = 'ortho_drape';
+              document.getElementById('selectSurfaceMode').value = 'ortho_drape';
+              statusEl.textContent = `File: ${file.name}`;
+              statusEl.style.color = '#4ade80';
+              refreshTerrainTextureOnly();
+            }
+          };
+          image.src = url;
+        }
+      } catch (_) {
+        alert('Gunakan tombol hijau: 📁 Pilih Folder "rgb pemetaan 3" untuk memuat ubin ortofoto dengan cepat.');
+      } finally {
+        overlay.style.display = 'none';
+      }
     }
 
-    // Simulasi Kalkulator Cut & Fill
-    document.getElementById('btnSimulateCalc').addEventListener('click', () => {
-      const btn = document.getElementById('btnSimulateCalc');
-      btn.textContent = 'Memindai Elevasi Pixel...';
-      btn.style.background = '#f59e0b';
-      
-      // Animasi Loading Palsu selama 1 detik (Sebelum integrasi rumus integrasi Grid Prismoidal)
-      setTimeout(() => {
-        const target = parseFloat(document.getElementById('targetElev').value) || 0;
-        // Rumus simulasi acak berdasarkan target elevasi
-        const mockCut = Math.abs(115 - target) * 4500 + Math.floor(Math.random() * 5000);
-        const mockFill = Math.abs(110 - target) * 3200 + Math.floor(Math.random() * 2000);
-        
-        document.getElementById('resCut').textContent = mockCut.toLocaleString('id-ID') + ' m³';
-        document.getElementById('resFill').textContent = mockFill.toLocaleString('id-ID') + ' m³';
-        
-        btn.textContent = 'Simulasikan Hitung Area Tengah Peta';
-        btn.style.background = '#38bdf8';
-      }, 1200);
+    // =========================================================
+    // 5. PEMBENTUKAN MESH 3D & WARNA ELEVASI
+    // =========================================================
+    function getHypsometricRGBNormalized(t) {
+      const c = Math.max(0, Math.min(1, t));
+      if (c < 0.25) {
+        const k = c / 0.25;
+        return [0.23 - k * 0.20, 0.51 + k * 0.20, 0.96 - k * 0.13];
+      } else if (c < 0.55) {
+        const k = (c - 0.25) / 0.30;
+        return [0.03 + k * 0.10, 0.71 + k * 0.06, 0.83 - k * 0.46];
+      } else if (c < 0.80) {
+        const k = (c - 0.55) / 0.25;
+        return [0.13 + k * 0.79, 0.77 - k * 0.07, 0.37 - k * 0.34];
+      } else {
+        const k = (c - 0.80) / 0.20;
+        return [0.92 + k * 0.02, 0.70 - k * 0.43, 0.03 + k * 0.23];
+      }
+    }
+
+    function createSafeWebGLTexture() {
+      if (
+        TerrainState.surfaceMode === 'ortho_drape' &&
+        TerrainState.hasOrthoLoaded &&
+        TerrainState.stitchedOrthoCanvas &&
+        isCanvasUntainted(TerrainState.stitchedOrthoCanvas)
+      ) {
+        const tex = new THREE.CanvasTexture(TerrainState.stitchedOrthoCanvas);
+        tex.wrapS = THREE.ClampToEdgeWrapping;
+        tex.wrapT = THREE.ClampToEdgeWrapping;
+        tex.needsUpdate = true;
+        return tex;
+      }
+
+      const c = document.createElement('canvas');
+      c.width = 16; c.height = 16;
+      const ctx = c.getContext('2d');
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, 16, 16);
+      return new THREE.CanvasTexture(c);
+    }
+
+    function updateMeshVertexColors(geo) {
+      const { gridW: w, gridH: h, elevGrid, minElev, maxElev, targetElev, surfaceMode, hasOrthoLoaded, hypsoBlend } = TerrainState;
+      const count = w * h;
+      const colors = new Float32Array(count * 3);
+      const range = Math.max(1, maxElev - minElev);
+      const orthoReady = hasOrthoLoaded && isCanvasUntainted(TerrainState.stitchedOrthoCanvas);
+
+      for (let i = 0; i < count; i++) {
+        const z = elevGrid[i];
+        let r = 1, g = 1, b = 1;
+
+        if (surfaceMode === 'cutfill_map') {
+          const diff = z - targetElev;
+          if (Math.abs(diff) < 0.3) {
+            r = 0.9; g = 0.92; b = 0.95;
+          } else if (diff > 0) {
+            const k = Math.min(1, diff / (range * 0.35));
+            r = 0.96; g = 0.55 * (1 - k); b = 0.28;
+          } else {
+            const k = Math.min(1, Math.abs(diff) / (range * 0.35));
+            r = 0.15; g = 0.65 + 0.30 * k; b = 0.45;
+          }
+        } else if (surfaceMode === 'hypsometric' || !orthoReady) {
+          [r, g, b] = getHypsometricRGBNormalized((z - minElev) / range);
+        } else {
+          const [hr, hg, hb] = getHypsometricRGBNormalized((z - minElev) / range);
+          r = (1 - hypsoBlend) * 1.0 + hypsoBlend * hr;
+          g = (1 - hypsoBlend) * 1.0 + hypsoBlend * hg;
+          b = (1 - hypsoBlend) * 1.0 + hypsoBlend * hb;
+        }
+
+        colors[i * 3] = r;
+        colors[i * 3 + 1] = g;
+        colors[i * 3 + 2] = b;
+      }
+
+      geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+    }
+
+    function buildTerrainMesh3D() {
+      if (terrainMesh) {
+        scene.remove(terrainMesh);
+        terrainMesh.geometry.dispose();
+        terrainMesh.material.dispose();
+      }
+
+      const { gridW: w, gridH: h, meshWidth, meshHeight, elevGrid, validMask } = TerrainState;
+      const geo = new THREE.PlaneGeometry(meshWidth, meshHeight, w - 1, h - 1);
+      geo.rotateX(-Math.PI / 2);
+
+      const posAttr = geo.attributes.position;
+      for (let i = 0; i < posAttr.count; i++) {
+        posAttr.setY(i, elevToWorldY(elevGrid[i]));
+      }
+
+      const oldIndex = geo.getIndex().array;
+      const cleanIndices = [];
+      for (let i = 0; i < oldIndex.length; i += 3) {
+        const a = oldIndex[i], b = oldIndex[i + 1], c = oldIndex[i + 2];
+        if (validMask[a] && validMask[b] && validMask[c]) {
+          cleanIndices.push(a, b, c);
+        }
+      }
+      geo.setIndex(cleanIndices);
+      geo.computeVertexNormals();
+      updateMeshVertexColors(geo);
+
+      const isXray = document.getElementById('chkXray').checked;
+
+      const mat = new THREE.MeshStandardMaterial({
+        map: createSafeWebGLTexture(),
+        vertexColors: true,
+        roughness: 0.80,
+        metalness: 0.05,
+        transparent: isXray,
+        opacity: isXray ? 0.55 : 1.0,
+        side: THREE.DoubleSide
+      });
+
+      terrainMesh = new THREE.Mesh(geo, mat);
+      scene.add(terrainMesh);
+
+      buildTargetElevationPlane();
+      build3DContours();
+    }
+
+    function refreshTerrainTextureOnly() {
+      if (!terrainMesh) return;
+      updateMeshVertexColors(terrainMesh.geometry);
+      terrainMesh.material.map = createSafeWebGLTexture();
+      terrainMesh.material.needsUpdate = true;
+    }
+
+    function buildTargetElevationPlane() {
+      if (targetPlaneMesh) {
+        scene.remove(targetPlaneMesh);
+        targetPlaneMesh.geometry.dispose();
+        targetPlaneMesh.material.dispose();
+      }
+      const pGeo = new THREE.PlaneGeometry(TerrainState.meshWidth, TerrainState.meshHeight);
+      pGeo.rotateX(-Math.PI / 2);
+      const pMat = new THREE.MeshBasicMaterial({
+        color: 0x38bdf8, transparent: true, opacity: 0.24, side: THREE.DoubleSide, depthWrite: false
+      });
+      targetPlaneMesh = new THREE.Mesh(pGeo, pMat);
+      targetPlaneMesh.position.y = elevToWorldY(TerrainState.targetElev);
+      targetPlaneMesh.visible = document.getElementById('chkTargetPlane').checked;
+      scene.add(targetPlaneMesh);
+    }
+
+    // =========================================================
+    // 6. ALGORITMA MARCHING SQUARES 4-SISI PENUH (KONTUR MULUS)
+    // =========================================================
+    function build3DContours() {
+      while (contourGroup.children.length > 0) {
+        const c = contourGroup.children[0];
+        c.geometry.dispose();
+        contourGroup.remove(c);
+      }
+      if (!document.getElementById('chkContours3D').checked) return;
+
+      const interval = parseFloat(document.getElementById('selectContourInterval').value) || 2.0;
+      const { gridW: w, gridH: h, meshWidth: mw, meshHeight: mh, elevGrid, validMask, minElev, maxElev } = TerrainState;
+
+      const startLevel = Math.ceil(minElev / interval) * interval;
+      const vertices = [];
+      const stepX = mw / (w - 1);
+      const stepZ = mh / (h - 1);
+
+      for (let level = startLevel; level <= maxElev; level += interval) {
+        const yWorld = elevToWorldY(level) + 0.45;
+
+        for (let y = 0; y < h - 1; y++) {
+          const wz0 = ((y / (h - 1)) - 0.5) * mh;
+          const wz1 = wz0 + stepZ;
+
+          for (let x = 0; x < w - 1; x++) {
+            const i0 = y * w + x, i1 = i0 + 1, i2 = i0 + w + 1, i3 = i0 + w;
+            if (!validMask[i0] || !validMask[i1] || !validMask[i2] || !validMask[i3]) continue;
+
+            const z0 = elevGrid[i0], z1 = elevGrid[i1], z2 = elevGrid[i2], z3 = elevGrid[i3];
+            const cellMin = Math.min(z0, z1, z2, z3);
+            const cellMax = Math.max(z0, z1, z2, z3);
+            if (level < cellMin || level > cellMax) continue;
+
+            const wx0 = ((x / (w - 1)) - 0.5) * mw;
+            const wx1 = wx0 + stepX;
+            const pts = [];
+
+            if ((z0 <= level && z1 > level) || (z0 > level && z1 <= level)) {
+              pts.push(wx0 + ((level - z0) / (z1 - z0 + 1e-9)) * stepX, wz0);
+            }
+            if ((z1 <= level && z2 > level) || (z1 > level && z2 <= level)) {
+              pts.push(wx1, wz0 + ((level - z1) / (z2 - z1 + 1e-9)) * stepZ);
+            }
+            if ((z3 <= level && z2 > level) || (z3 > level && z2 <= level)) {
+              pts.push(wx0 + ((level - z3) / (z2 - z3 + 1e-9)) * stepX, wz1);
+            }
+            if ((z0 <= level && z3 > level) || (z0 > level && z3 <= level)) {
+              pts.push(wx0, wz0 + ((level - z0) / (z3 - z0 + 1e-9)) * stepZ);
+            }
+
+            if (pts.length >= 4) {
+              vertices.push(pts[0], yWorld, pts[1], pts[2], yWorld, pts[3]);
+              if (pts.length === 8) {
+                vertices.push(pts[4], yWorld, pts[5], pts[6], yWorld, pts[7]);
+              }
+            }
+          }
+        }
+      }
+
+      if (vertices.length > 0) {
+        const lineGeo = new THREE.BufferGeometry();
+        lineGeo.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+        const lineMat = new THREE.LineBasicMaterial({ color: 0xfef08a, transparent: true, opacity: 0.62 });
+        contourGroup.add(new THREE.LineSegments(lineGeo, lineMat));
+      }
+    }
+
+    function sampleElevAtLonLat(lon, lat) {
+      const [minLon, minLat, maxLon, maxLat] = TerrainState.bbox;
+      const u = (lon - minLon) / (maxLon - minLon);
+      const v = (maxLat - lat) / (maxLat - minLat);
+      if (u < 0 || u > 1 || v < 0 || v > 1) return null;
+
+      const { gridW: w, gridH: h, meshWidth: mw, meshHeight: mh, elevGrid, validMask } = TerrainState;
+      const gx = Math.max(0, Math.min(w - 1, Math.round(u * (w - 1))));
+      const gy = Math.max(0, Math.min(h - 1, Math.round(v * (h - 1))));
+      const idx = gy * w + gx;
+      if (!validMask[idx]) return null;
+
+      return {
+        x: (u - 0.5) * mw,
+        y: elevToWorldY(elevGrid[idx]) + 1.2,
+        z: (v - 0.5) * mh
+      };
+    }
+
+    function loadVectorsOnto3D() {
+      while (vector3DGroup.children.length) vector3DGroup.remove(vector3DGroup.children[0]);
+      if (!document.getElementById('chkVectors3D').checked || !window.location.protocol.startsWith('http')) return;
+
+      const files = [
+        { url: 'row.geojson', color: 0xf43f5e },
+        { url: 'siteplancluster1.geojson', color: 0x38bdf8 },
+        { url: 'siteplancluster2.geojson', color: 0x34d399 },
+        { url: 'siteplancluster3.geojson', color: 0xfbbf24 }
+      ];
+
+      files.forEach(cfg => {
+        fetch(cfg.url)
+          .then(r => r.ok ? r.json() : Promise.reject())
+          .then(data => {
+            const segs = [];
+            const parseRing = ring => {
+              for (let i = 0; i < ring.length - 1; i++) {
+                const p1 = sampleElevAtLonLat(ring[i][0], ring[i][1]);
+                const p2 = sampleElevAtLonLat(ring[i + 1][0], ring[i + 1][1]);
+                if (p1 && p2) segs.push(p1.x, p1.y, p1.z, p2.x, p2.y, p2.z);
+              }
+            };
+            (data.features || []).forEach(f => {
+              const g = f.geometry;
+              if (!g) return;
+              if (g.type === 'LineString') parseRing(g.coordinates);
+              else if (g.type === 'MultiLineString' || g.type === 'Polygon') g.coordinates.forEach(parseRing);
+              else if (g.type === 'MultiPolygon') g.coordinates.forEach(poly => poly.forEach(parseRing));
+            });
+            if (segs.length > 0) {
+              const lGeo = new THREE.BufferGeometry();
+              lGeo.setAttribute('position', new THREE.Float32BufferAttribute(segs, 3));
+              vector3DGroup.add(new THREE.LineSegments(lGeo, new THREE.LineBasicMaterial({ color: cfg.color })));
+            }
+          })
+          .catch(() => {});
+      });
+    }
+
+    // =========================================================
+    // 7. KALKULATOR CUT & FILL & SIMULASI GRADING 3D
+    // =========================================================
+    function isPointInPolyXZ(px, pz, pts) {
+      let inside = false;
+      for (let i = 0, j = pts.length - 1; i < pts.length; j = i++) {
+        const xi = pts[i].x, zi = pts[i].z;
+        const xj = pts[j].x, zj = pts[j].z;
+        const intersect = ((zi > pz) !== (zj > pz)) && (px < (xj - xi) * (pz - zi) / (zj - zi + 1e-9) + xi);
+        if (intersect) inside = !inside;
+      }
+      return inside;
+    }
+
+    function calculateCutFillVolume() {
+      const { gridW: w, gridH: h, meshWidth: mw, meshHeight: mh, elevGrid, validMask, worldWidthMeters, worldHeightMeters, targetElev, polyPointsWorld } = TerrainState;
+      const cellAreaM2 = (worldWidthMeters / w) * (worldHeightMeters / h);
+      const usePoly = polyPointsWorld.length >= 3;
+
+      let cutVol = 0, fillVol = 0, activeCells = 0;
+
+      for (let y = 0; y < h; y++) {
+        for (let x = 0; x < w; x++) {
+          const i = y * w + x;
+          if (!validMask[i]) continue;
+
+          if (usePoly) {
+            const wx = ((x / (w - 1)) - 0.5) * mw;
+            const wz = ((y / (h - 1)) - 0.5) * mh;
+            if (!isPointInPolyXZ(wx, wz, polyPointsWorld)) continue;
+          }
+
+          activeCells++;
+          const diff = elevGrid[i] - targetElev;
+          if (diff > 0) cutVol += diff * cellAreaM2;
+          else fillVol += Math.abs(diff) * cellAreaM2;
+        }
+      }
+
+      const totalArea = activeCells * cellAreaM2;
+      const netVol = cutVol - fillVol;
+
+      document.getElementById('resCutVol').textContent = `${Math.round(cutVol).toLocaleString('id-ID')} m³`;
+      document.getElementById('resFillVol').textContent = `${Math.round(fillVol).toLocaleString('id-ID')} m³`;
+      document.getElementById('resAreaVal').textContent = `${Math.round(totalArea).toLocaleString('id-ID')} m²`;
+      document.getElementById('resNetVol').textContent = `${netVol >= 0 ? '+' : ''}${Math.round(netVol).toLocaleString('id-ID')} m³`;
+    }
+
+    function apply3DGradingSimulation() {
+      const { gridW: w, gridH: h, meshWidth: mw, meshHeight: mh, elevGrid, validMask, targetElev, polyPointsWorld } = TerrainState;
+      const usePoly = polyPointsWorld.length >= 3;
+
+      for (let y = 0; y < h; y++) {
+        for (let x = 0; x < w; x++) {
+          const i = y * w + x;
+          if (!validMask[i]) continue;
+
+          if (usePoly) {
+            const wx = ((x / (w - 1)) - 0.5) * mw;
+            const wz = ((y / (h - 1)) - 0.5) * mh;
+            if (isPointInPolyXZ(wx, wz, polyPointsWorld)) elevGrid[i] = targetElev;
+          } else if (x > w * 0.3 && x < w * 0.7 && y > h * 0.3 && y < h * 0.7) {
+            elevGrid[i] = targetElev;
+          }
+        }
+      }
+      buildTerrainMesh3D();
+      calculateCutFillVolume();
+    }
+
+    // =========================================================
+    // 8. PROFIL MELINTANG & MODEL BIM 3D
+    // =========================================================
+    let profileChartInstance = null;
+    function updateProfileChart(ptA, ptB) {
+      const samples = 40;
+      const labels = [], terrainElevs = [], targetElevs = [];
+      const { gridW: w, gridH: h, meshWidth: mw, meshHeight: mh, elevGrid, worldWidthMeters } = TerrainState;
+      const distMeters = (ptA.distanceTo(ptB) / mw) * worldWidthMeters;
+      document.getElementById('profileDistLabel').textContent = `Jarak: ${distMeters.toFixed(1)} m`;
+
+      for (let s = 0; s <= samples; s++) {
+        const t = s / samples;
+        const px = ptA.x + (ptB.x - ptA.x) * t;
+        const pz = ptA.z + (ptB.z - ptA.z) * t;
+        const gx = Math.max(0, Math.min(w - 1, Math.round(((px / mw) + 0.5) * (w - 1))));
+        const gy = Math.max(0, Math.min(h - 1, Math.round(((pz / mh) + 0.5) * (h - 1))));
+        labels.push(`${Math.round(t * distMeters)}m`);
+        terrainElevs.push(+elevGrid[gy * w + gx].toFixed(2));
+        targetElevs.push(TerrainState.targetElev);
+      }
+
+      const ctx = document.getElementById('profileChart').getContext('2d');
+      if (profileChartInstance) profileChartInstance.destroy();
+      profileChartInstance = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels,
+          datasets: [
+            { label: 'Elevasi Tanah (mdpl)', data: terrainElevs, borderColor: '#22c55e', backgroundColor: 'rgba(34,197,94,0.2)', borderWidth: 2.5, fill: true, tension: 0.3, pointRadius: 0 },
+            { label: 'Target Grading', data: targetElevs, borderColor: '#38bdf8', borderDash: [4, 4], borderWidth: 2, pointRadius: 0 }
+          ]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          plugins: { legend: { labels: { color: '#cbd5e1', font: { size: 10 }, boxWidth: 10 } } },
+          scales: {
+            x: { ticks: { color: '#94a3b8', font: { size: 9 }, maxTicksLimit: 6 }, grid: { color: 'rgba(255,255,255,0.05)' } },
+            y: { ticks: { color: '#94a3b8', font: { size: 9 } }, grid: { color: 'rgba(255,255,255,0.05)' } }
+          }
+        }
+      });
+    }
+
+    function spawnParametricBimAt(worldPt) {
+      const houseGroup = new THREE.Group();
+      const foundMesh = new THREE.Mesh(new THREE.BoxGeometry(24, 14, 18), new THREE.MeshStandardMaterial({ color: 0x64748b }));
+      foundMesh.position.y = -7;
+      const bodyMesh = new THREE.Mesh(new THREE.BoxGeometry(22, 15, 16), new THREE.MeshStandardMaterial({ color: 0xf8fafc }));
+      bodyMesh.position.y = 7.5;
+      const roofGeo = new THREE.ConeGeometry(17, 8, 4);
+      roofGeo.rotateY(Math.PI / 4);
+      const roofMesh = new THREE.Mesh(roofGeo, new THREE.MeshStandardMaterial({ color: 0x0284c7 }));
+      roofMesh.position.y = 19;
+      houseGroup.add(foundMesh, bodyMesh, roofMesh);
+      houseGroup.position.copy(worldPt);
+      bimGroup.add(houseGroup);
+    }
+
+    function updateElevationUI() {
+      const { minElev, maxElev, targetElev } = TerrainState;
+      document.getElementById('kpiMinElev').textContent = `${minElev.toFixed(1)} m`;
+      document.getElementById('kpiMaxElev').textContent = `${maxElev.toFixed(1)} m`;
+      document.getElementById('elevRangeLabel').textContent = `${minElev.toFixed(0)}m - ${maxElev.toFixed(0)}m`;
+      document.getElementById('legMin').textContent = `${minElev.toFixed(0)} m`;
+      document.getElementById('legMid').textContent = `${((minElev + maxElev) / 2).toFixed(0)} m`;
+      document.getElementById('legMax').textContent = `${maxElev.toFixed(0)} m`;
+
+      const sliderT = document.getElementById('sliderTargetElev');
+      sliderT.min = Math.floor(minElev); sliderT.max = Math.ceil(maxElev); sliderT.value = targetElev;
+      document.getElementById('inputTargetElev').value = targetElev;
+      document.getElementById('targetElevText').textContent = `${targetElev.toFixed(1)} m`;
+    }
+
+    // =========================================================
+    // 9. INTERAKSI MOUSE/TOUCH & KONTROL UI
+    // =========================================================
+    const raycaster = new THREE.Raycaster();
+    const mouse = new THREE.Vector2();
+
+    renderer.domElement.addEventListener('pointermove', e => {
+      if (!terrainMesh) return;
+      const rect = renderer.domElement.getBoundingClientRect();
+      mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+      mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+
+      raycaster.setFromCamera(mouse, camera);
+      const hits = raycaster.intersectObject(terrainMesh);
+      if (hits.length > 0) {
+        const hit = hits[0];
+        cursorMarker.position.copy(hit.point);
+        cursorMarker.position.y += 0.5;
+        cursorMarker.visible = true;
+
+        const elevMdpl = worldYToElev(hit.point.y);
+        const normal = hit.face ? hit.face.normal : new THREE.Vector3(0, 1, 0);
+        const slopeDeg = Math.acos(Math.max(-1, Math.min(1, normal.y))) * (180 / Math.PI);
+        const slopePct = Math.tan(slopeDeg * Math.PI / 180) * 100;
+
+        document.getElementById('hudElev').textContent = `${elevMdpl.toFixed(2)} mdpl`;
+        document.getElementById('hudSlope').textContent = `${slopeDeg.toFixed(1)}° (${slopePct.toFixed(0)}%)`;
+        document.getElementById('liveElevVal').textContent = `${elevMdpl.toFixed(2)} mdpl`;
+        document.getElementById('liveSlopeVal').textContent = `${slopeDeg.toFixed(1)}° (${slopePct.toFixed(0)}%)`;
+      } else {
+        cursorMarker.visible = false;
+      }
     });
 
-    // Jalankan inisialisasi
-    initTerrainAndLayers();
+    renderer.domElement.addEventListener('pointerdown', e => {
+      if (e.button !== 0 || TerrainState.interactionMode === 'inspect' || !terrainMesh) return;
+      const rect = renderer.domElement.getBoundingClientRect();
+      mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+      mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+      raycaster.setFromCamera(mouse, camera);
+      const hits = raycaster.intersectObject(terrainMesh);
+      if (!hits.length) return;
+      const pt = hits[0].point.clone();
 
+      if (TerrainState.interactionMode === 'draw_poly') {
+        TerrainState.polyPointsWorld.push(pt);
+        while (polyDrawGroup.children.length) polyDrawGroup.remove(polyDrawGroup.children[0]);
+        TerrainState.polyPointsWorld.forEach(p => {
+          const m = new THREE.Mesh(new THREE.SphereGeometry(4, 12, 12), new THREE.MeshBasicMaterial({ color: 0xf43f5e }));
+          m.position.copy(p); polyDrawGroup.add(m);
+        });
+        if (TerrainState.polyPointsWorld.length >= 2) {
+          const closed = [...TerrainState.polyPointsWorld, TerrainState.polyPointsWorld[0]].map(p => new THREE.Vector3(p.x, p.y + 1.5, p.z));
+          polyDrawGroup.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(closed), new THREE.LineBasicMaterial({ color: 0xf43f5e })));
+        }
+        document.getElementById('polyPtsBadge').textContent = `${TerrainState.polyPointsWorld.length} Titik`;
+        if (TerrainState.polyPointsWorld.length >= 3) calculateCutFillVolume();
+      } else if (TerrainState.interactionMode === 'draw_profile') {
+        TerrainState.profilePointsWorld.push(pt);
+        if (TerrainState.profilePointsWorld.length === 2) {
+          updateProfileChart(TerrainState.profilePointsWorld[0], TerrainState.profilePointsWorld[1]);
+          TerrainState.interactionMode = 'inspect';
+          document.getElementById('btnDrawProfile').classList.remove('active');
+          if (isMobileScreen()) leftDrawer.classList.remove('collapsed');
+        }
+      } else if (TerrainState.interactionMode === 'place_bim') {
+        spawnParametricBimAt(pt);
+        TerrainState.interactionMode = 'inspect';
+        document.getElementById('btnPlaceSampleBim').classList.remove('active');
+      }
+    });
+
+    document.getElementById('btnToggleSidebar').addEventListener('click', () => leftDrawer.classList.toggle('collapsed'));
+    document.getElementById('collapsedTab').addEventListener('click', () => leftDrawer.classList.toggle('collapsed'));
+
+    document.querySelectorAll('.d-tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        document.querySelectorAll('.d-tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+        tab.classList.add('active');
+        document.getElementById(tab.getAttribute('data-tab')).classList.add('active');
+      });
+    });
+
+    function handleDtmFile(e) {
+      const f = e.target.files[0];
+      if (f) loadDtmFromSource(f, f.name, true);
+    }
+    document.getElementById('fileInputDtm').addEventListener('change', handleDtmFile);
+    document.getElementById('fileInputDtmSidebar').addEventListener('change', handleDtmFile);
+
+    function handleOrthoFolder(e) {
+      const files = e.target.files;
+      if (files && files.length > 0) stitchTilesFromLocalFolderList(files);
+    }
+    document.getElementById('folderInputOrthoHeader').addEventListener('change', handleOrthoFolder);
+    document.getElementById('folderInputOrthoSidebar').addEventListener('change', handleOrthoFolder);
+
+    document.getElementById('selectHttpOrthoFolder').addEventListener('change', e => {
+      TerrainState.httpOrthoFolder = e.target.value;
+      stitchOrthoTilesOverHttp(TerrainState.httpOrthoFolder);
+    });
+
+    document.getElementById('fileInputOrthoSidebar').addEventListener('change', e => {
+      const f = e.target.files[0];
+      if (f) loadLocalOrthoFile(f);
+    });
+
+    document.getElementById('sliderBlend').addEventListener('input', e => {
+      const pct = parseInt(e.target.value, 10);
+      TerrainState.hypsoBlend = pct / 100;
+      document.getElementById('blendValText').textContent = pct === 0 ? '0% (Foto Murni)' : `${pct}% Campuran`;
+      refreshTerrainTextureOnly();
+    });
+
+    document.getElementById('selectSurfaceMode').addEventListener('change', e => {
+      TerrainState.surfaceMode = e.target.value;
+      refreshTerrainTextureOnly();
+    });
+
+    document.getElementById('sliderExag').addEventListener('input', e => {
+      TerrainState.exaggeration = parseFloat(e.target.value);
+      document.getElementById('exagValText').textContent = `${TerrainState.exaggeration.toFixed(1)}x`;
+      buildTerrainMesh3D();
+    });
+
+    document.getElementById('chkContours3D').addEventListener('change', build3DContours);
+    document.getElementById('selectContourInterval').addEventListener('change', build3DContours);
+    document.getElementById('chkVectors3D').addEventListener('change', loadVectorsOnto3D);
+    document.getElementById('chkXray').addEventListener('change', buildTerrainMesh3D);
+
+    function syncTargetElev(val) {
+      TerrainState.targetElev = parseFloat(val) || 220;
+      document.getElementById('inputTargetElev').value = TerrainState.targetElev;
+      document.getElementById('sliderTargetElev').value = TerrainState.targetElev;
+      document.getElementById('targetElevText').textContent = `${TerrainState.targetElev.toFixed(1)} m`;
+      if (targetPlaneMesh) targetPlaneMesh.position.y = elevToWorldY(TerrainState.targetElev);
+      if (TerrainState.surfaceMode === 'cutfill_map') refreshTerrainTextureOnly();
+      calculateCutFillVolume();
+    }
+    document.getElementById('sliderTargetElev').addEventListener('input', e => syncTargetElev(e.target.value));
+    document.getElementById('inputTargetElev').addEventListener('change', e => syncTargetElev(e.target.value));
+    document.getElementById('chkTargetPlane').addEventListener('change', e => {
+      if (targetPlaneMesh) targetPlaneMesh.visible = e.target.checked;
+    });
+
+    document.getElementById('btnDrawCutFillPoly').addEventListener('click', e => {
+      const isAct = TerrainState.interactionMode === 'draw_poly';
+      TerrainState.interactionMode = isAct ? 'inspect' : 'draw_poly';
+      if (!isAct) {
+        TerrainState.polyPointsWorld = [];
+        while (polyDrawGroup.children.length) polyDrawGroup.remove(polyDrawGroup.children[0]);
+        if (isMobileScreen()) leftDrawer.classList.add('collapsed');
+      }
+      e.target.classList.toggle('active', !isAct);
+    });
+    document.getElementById('btnResetPoly').addEventListener('click', () => {
+      TerrainState.interactionMode = 'inspect';
+      TerrainState.polyPointsWorld = [];
+      while (polyDrawGroup.children.length) polyDrawGroup.remove(polyDrawGroup.children[0]);
+      document.getElementById('polyPtsBadge').textContent = 'Seluruh Area';
+      calculateCutFillVolume();
+    });
+    document.getElementById('btnCalcVolume').addEventListener('click', () => {
+      TerrainState.surfaceMode = 'cutfill_map';
+      document.getElementById('selectSurfaceMode').value = 'cutfill_map';
+      refreshTerrainTextureOnly();
+      calculateCutFillVolume();
+    });
+    document.getElementById('btnApplyGrading').addEventListener('click', apply3DGradingSimulation);
+    document.getElementById('btnRestoreTerrain').addEventListener('click', () => {
+      if (TerrainState.originalElevGrid) {
+        TerrainState.elevGrid = new Float32Array(TerrainState.originalElevGrid);
+        buildTerrainMesh3D();
+        calculateCutFillVolume();
+      }
+    });
+
+    document.getElementById('btnDrawProfile').addEventListener('click', e => {
+      TerrainState.interactionMode = 'draw_profile';
+      TerrainState.profilePointsWorld = [];
+      e.target.classList.add('active');
+      if (isMobileScreen()) leftDrawer.classList.add('collapsed');
+    });
+    document.getElementById('btnPlaceSampleBim').addEventListener('click', e => {
+      TerrainState.interactionMode = 'place_bim';
+      e.target.classList.add('active');
+      if (isMobileScreen()) leftDrawer.classList.add('collapsed');
+    });
+    document.getElementById('btnClearBim').addEventListener('click', () => {
+      while (bimGroup.children.length) bimGroup.remove(bimGroup.children[0]);
+    });
+
+    document.getElementById('fileInputBim').addEventListener('change', e => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const url = URL.createObjectURL(file);
+      const loader = new THREE.GLTFLoader();
+      loader.load(url, gltf => {
+        const model = gltf.scene;
+        model.position.set(0, elevToWorldY(TerrainState.targetElev), 0);
+        bimGroup.add(model);
+      });
+    });
+
+    document.getElementById('sliderBimZ').addEventListener('input', e => {
+      const z = parseFloat(e.target.value);
+      document.getElementById('bimElevText').textContent = `${z.toFixed(1)} m`;
+      bimGroup.children.forEach(obj => { obj.position.y = elevToWorldY(z); });
+    });
+    document.getElementById('sliderBimRot').addEventListener('input', e => {
+      const deg = parseFloat(e.target.value);
+      document.getElementById('bimRotText').textContent = `${deg}°`;
+      bimGroup.children.forEach(obj => { obj.rotation.y = deg * Math.PI / 180; });
+    });
+    document.getElementById('sliderBimScale').addEventListener('input', e => {
+      const sc = parseFloat(e.target.value);
+      document.getElementById('bimScaleText').textContent = `${sc.toFixed(1)}x`;
+      bimGroup.children.forEach(obj => { obj.scale.set(sc, sc, sc); });
+    });
+
+    document.getElementById('camIso').addEventListener('click', () => { camera.position.set(0, 620, 860); controls.target.set(0, 0, 0); });
+    document.getElementById('camTop').addEventListener('click', () => { camera.position.set(0, 1150, 1); controls.target.set(0, 0, 0); });
+    document.getElementById('camLow').addEventListener('click', () => { camera.position.set(-420, 150, 480); controls.target.set(0, 35, 0); });
+    document.getElementById('btnFullscreen').addEventListener('click', () => {
+      !document.fullscreenElement ? document.documentElement.requestFullscreen() : document.exitFullscreen();
+    });
+
+    window.addEventListener('resize', () => {
+      camera.aspect = container.clientWidth / container.clientHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(container.clientWidth, container.clientHeight);
+    });
+
+    // =========================================================
+    // 10. INISIALISASI AWAL (OTOMATIS MUAT DTM & ORTHO DI GITHUB PAGES)
+    // =========================================================
+    (function initStart() {
+      const w = TerrainState.gridW, h = TerrainState.gridH;
+      const grid = new Float32Array(w * h);
+      const mask = new Uint8Array(w * h);
+
+      for (let y = 0; y < h; y++) {
+        for (let x = 0; x < w; x++) {
+          const nx = (x / w) - 0.5, ny = (y / h) - 0.5;
+          grid[y * w + x] = 220 + Math.sin(nx * 5) * Math.cos(ny * 5) * 22 + (nx * 18);
+          mask[y * w + x] = 1;
+        }
+      }
+      TerrainState.elevGrid = grid;
+      TerrainState.originalElevGrid = new Float32Array(grid);
+      TerrainState.validMask = mask;
+      buildTerrainMesh3D();
+      updateProfileChart(new THREE.Vector3(-250, 0, -180), new THREE.Vector3(250, 0, 180));
+
+      // Jika dibuka di GitHub Pages (http/https), otomatis panggil dtm_web.tif & ubin rgb pemetaan 3
+      if (window.location.protocol.startsWith('http')) {
+        fetch('dtm_web.tif')
+          .then(r => r.ok ? r.arrayBuffer() : Promise.reject())
+          .then(buf => loadDtmFromSource(buf, 'dtm_web.tif', false))
+          .catch(() => {
+            document.getElementById('orthoStatusLabel').textContent = 'Pilih Manual';
+          });
+      } else {
+        document.getElementById('orthoStatusLabel').textContent = 'Mode Lokal (Pilih Folder)';
+      }
+
+      function animate() {
+        requestAnimationFrame(animate);
+        controls.update();
+        renderer.render(scene, camera);
+      }
+      animate();
+    })();
   </script>
 </body>
 </html>

@@ -2,8 +2,8 @@
 <html lang="id">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>WebGIS Digital Twin Konstruksi - Triniti Land</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>WebGIS Digital Twin 2D - Triniti Land Sequoia Hills</title>
 
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -15,7 +15,7 @@
       --bg-panel: #0f172a;
       --bg-card: #162033;
       --bg-card-inner: #0d1526;
-      --border-line: rgba(255, 255, 255, 0.10);
+      --border-line: rgba(255, 255, 255, 0.11);
       --accent-cyan: #06b6d4;
       --accent-blue: #38bdf8;
       --accent-green: #22c55e;
@@ -26,66 +26,86 @@
       --text-main: #f8fafc;
       --text-muted: #94a3b8;
       --header-h: 54px;
-      --sidebar-w: 430px;
+      --sidebar-w: 425px;
     }
 
-    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; -webkit-font-smoothing: antialiased; }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; -webkit-font-smoothing: antialiased; -webkit-tap-highlight-color: transparent; }
     body, html { width: 100%; height: 100%; overflow: hidden; background: var(--bg-dark); color: var(--text-main); }
 
     /* =========================================================
-       1. HEADER UTAMA ATAS
+       1. HEADER UTAMA ATAS (RESPONSIF DESKTOP & PONSEL)
        ========================================================= */
     .top-header {
       position: fixed; top: 0; left: 0; right: 0; height: var(--header-h);
       background: var(--bg-header); border-bottom: 1px solid var(--border-line);
       display: flex; align-items: center; justify-content: space-between;
-      padding: 0 14px; z-index: 2000; box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+      padding: 0 12px; z-index: 2000; box-shadow: 0 4px 20px rgba(0,0,0,0.5); gap: 8px;
     }
-    .header-left { display: flex; align-items: center; gap: 12px; }
+    .header-left { display: flex; align-items: center; gap: 10px; min-width: 0; }
     .btn-hamburger {
       width: 36px; height: 36px; border-radius: 8px; border: 1px solid var(--border-line);
       background: rgba(255,255,255,0.04); color: var(--text-main); font-size: 18px;
-      display: flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.2s;
+      display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; transition: 0.2s;
     }
     .btn-hamburger:hover { background: rgba(56, 189, 248, 0.15); border-color: var(--accent-blue); }
 
     .brand-logo {
-      width: 34px; height: 34px; border-radius: 50%;
+      width: 32px; height: 32px; border-radius: 50%;
       background: radial-gradient(circle at 30% 30%, #38bdf8, #0284c7);
-      display: flex; align-items: center; justify-content: center;
-      box-shadow: 0 0 12px rgba(56, 189, 248, 0.4); font-weight: 700; font-size: 13px; color: #fff;
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+      box-shadow: 0 0 12px rgba(56, 189, 248, 0.4); font-weight: 700; font-size: 12px; color: #fff;
     }
-    .brand-text h1 { font-size: 14px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+    .brand-text { min-width: 0; }
+    .brand-text h1 {
+      font-size: 13.5px; font-weight: 700; display: flex; align-items: center; gap: 6px;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
     .badge-active {
-      font-size: 9.5px; font-weight: 700; padding: 2px 6px; border-radius: 4px;
+      font-size: 9px; font-weight: 700; padding: 2px 6px; border-radius: 4px; flex-shrink: 0;
       background: rgba(34, 197, 94, 0.2); color: #4ade80; border: 1px solid rgba(34, 197, 94, 0.4);
     }
-    .brand-text p { font-size: 11px; color: var(--text-muted); margin-top: 1px; }
+    .brand-text p { font-size: 10.5px; color: var(--text-muted); margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-    .header-right { display: flex; align-items: center; gap: 8px; }
+    .header-right {
+      display: flex; align-items: center; gap: 6px; flex-shrink: 0;
+      overflow-x: auto; scrollbar-width: none;
+    }
+    .header-right::-webkit-scrollbar { display: none; }
+
     .hdr-btn {
-      padding: 6px 12px; border-radius: 8px; border: 1px solid var(--border-line);
-      background: rgba(255,255,255,0.05); color: var(--text-main); font-size: 11.5px;
-      font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: 0.2s;
+      padding: 6px 11px; border-radius: 8px; border: 1px solid var(--border-line);
+      background: rgba(255,255,255,0.05); color: var(--text-main); font-size: 11px;
+      font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 5px;
+      transition: 0.2s; text-decoration: none; white-space: nowrap; flex-shrink: 0;
     }
     .hdr-btn:hover { background: rgba(255,255,255,0.1); }
     .hdr-btn.active { background: rgba(6, 182, 212, 0.2); border-color: var(--accent-cyan); color: var(--accent-blue); }
 
+    /* Tombol Shortcut Spesial ke WebGIS 3D */
+    .hdr-btn.btn-3d-switch {
+      background: linear-gradient(135deg, rgba(168, 85, 247, 0.28), rgba(56, 189, 248, 0.28));
+      border: 1px solid rgba(168, 85, 247, 0.6); color: #f3e8ff;
+      box-shadow: 0 0 12px rgba(168, 85, 247, 0.25);
+    }
+    .hdr-btn.btn-3d-switch:hover {
+      background: linear-gradient(135deg, #a855f7, #0284c7); color: #fff;
+    }
+
     .dropdown-wrap { position: relative; }
     .dropdown-menu {
-      position: absolute; top: calc(100% + 6px); right: 0; width: 175px;
+      position: fixed; top: calc(var(--header-h) + 4px); right: 60px; width: 180px;
       background: var(--bg-header); border: 1px solid var(--border-line); border-radius: 10px;
-      padding: 5px; box-shadow: 0 10px 25px rgba(0,0,0,0.6); display: none; flex-direction: column; gap: 3px;
+      padding: 5px; box-shadow: 0 10px 25px rgba(0,0,0,0.7); display: none; flex-direction: column; gap: 3px; z-index: 2500;
     }
     .dropdown-menu.show { display: flex; }
     .drop-item {
-      padding: 7px 10px; border-radius: 6px; font-size: 11.5px; color: var(--text-main);
+      padding: 8px 10px; border-radius: 6px; font-size: 11.5px; color: var(--text-main);
       background: transparent; border: none; text-align: left; cursor: pointer; display: flex; align-items: center; gap: 8px;
     }
     .drop-item:hover { background: rgba(56, 189, 248, 0.15); color: var(--accent-blue); }
 
     /* =========================================================
-       2. WADAH UTAMA & PETA
+       2. WADAH UTAMA & KANVAS PETA
        ========================================================= */
     .main-wrapper {
       position: fixed; top: var(--header-h); left: 0; right: 0; bottom: 0;
@@ -99,7 +119,7 @@
        ========================================================= */
     .left-drawer {
       position: absolute; top: 0; left: 0; bottom: 0; width: var(--sidebar-w);
-      max-width: 92vw; background: var(--bg-panel);
+      max-width: 90vw; background: var(--bg-panel);
       border-right: 1px solid var(--border-line); z-index: 1200;
       display: flex; flex-direction: column;
       transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -117,17 +137,16 @@
     .left-drawer.collapsed + .collapsed-tab { opacity: 1; pointer-events: auto; }
     .collapsed-tab span { writing-mode: vertical-rl; text-orientation: mixed; font-size: 11px; font-weight: 700; letter-spacing: 1px; color: var(--accent-blue); }
 
-    /* Baris Tab Menu di Atas Sidebar */
     .drawer-tabs {
       display: flex; overflow-x: auto; border-bottom: 1px solid var(--border-line);
       background: #0a101d; flex-shrink: 0; scrollbar-width: none;
     }
     .drawer-tabs::-webkit-scrollbar { display: none; }
     .d-tab {
-      flex: 1; min-width: max-content; padding: 12px 10px; background: transparent;
+      flex: 1; min-width: max-content; padding: 11px 9px; background: transparent;
       border: none; border-bottom: 2.5px solid transparent;
-      color: var(--text-muted); font-size: 11.5px; font-weight: 600;
-      cursor: pointer; transition: 0.2s; display: flex; align-items: center; justify-content: center; gap: 5px;
+      color: var(--text-muted); font-size: 11px; font-weight: 600;
+      cursor: pointer; transition: 0.2s; display: flex; align-items: center; justify-content: center; gap: 4px;
     }
     .d-tab:hover { color: #fff; background: rgba(255,255,255,0.02); }
     .d-tab.active {
@@ -135,57 +154,52 @@
       background: rgba(56, 189, 248, 0.08);
     }
 
-    /* Area Konten Tab (Hanya 1 Tab Tampil pada Satu Waktu) */
-    .drawer-content { flex: 1; overflow-y: auto; padding: 14px; }
+    .drawer-content { flex: 1; overflow-y: auto; padding: 12px; -webkit-overflow-scrolling: touch; }
     .drawer-content::-webkit-scrollbar { width: 5px; }
     .drawer-content::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 4px; }
 
-    .tab-pane { display: none; flex-direction: column; gap: 12px; animation: fadeIn 0.18s ease-out; }
+    .tab-pane { display: none; flex-direction: column; gap: 11px; animation: fadeIn 0.18s ease-out; }
     .tab-pane.active { display: flex; }
     @keyframes fadeIn { from { opacity: 0; transform: translateY(3px); } to { opacity: 1; transform: translateY(0); } }
 
-    /* Kartu Banner Judul Menu (Seperti di Video) */
     .pane-banner {
       background: linear-gradient(135deg, rgba(30, 41, 59, 0.9), rgba(15, 23, 42, 0.95));
       border: 1px solid rgba(56, 189, 248, 0.22); border-radius: 10px;
-      padding: 12px 14px; display: flex; justify-content: space-between; align-items: center;
+      padding: 11px 13px; display: flex; justify-content: space-between; align-items: center; gap: 8px;
     }
-    .pane-banner-title { font-size: 11.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #fff; }
-    .pane-banner-sub { font-size: 10.5px; color: var(--text-muted); margin-top: 2px; }
+    .pane-banner-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #fff; }
+    .pane-banner-sub { font-size: 10px; color: var(--text-muted); margin-top: 2px; }
     .pane-badge {
-      font-size: 9.5px; font-weight: 700; padding: 3px 8px; border-radius: 6px;
+      font-size: 9px; font-weight: 700; padding: 3px 7px; border-radius: 6px;
       background: rgba(6, 182, 212, 0.18); color: var(--accent-blue); border: 1px solid rgba(6, 182, 212, 0.35);
-      white-space: nowrap;
+      white-space: nowrap; flex-shrink: 0;
     }
 
-    /* Kartu Konten Dalam Tab */
     .menu-card {
       background: var(--bg-card); border: 1px solid var(--border-line);
-      border-radius: 10px; padding: 12px; display: flex; flex-direction: column; gap: 10px;
+      border-radius: 10px; padding: 11px; display: flex; flex-direction: column; gap: 9px;
     }
     .menu-card-header {
       display: flex; justify-content: space-between; align-items: center;
-      font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;
-      color: #e2e8f0; padding-bottom: 8px; border-bottom: 1px solid var(--border-line);
+      font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;
+      color: #e2e8f0; padding-bottom: 7px; border-bottom: 1px solid var(--border-line);
     }
 
-    /* Komponen Layer Control (Toggle Switch + Opacity + Fit to Layer) */
     .layer-item-card {
       background: var(--bg-card-inner); border: 1px solid var(--border-line);
-      border-radius: 9px; padding: 10px 12px; display: flex; flex-direction: column; gap: 8px;
+      border-radius: 9px; padding: 9px 11px; display: flex; flex-direction: column; gap: 7px;
     }
     .layer-top-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-    .layer-name-wrap { display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 600; }
+    .layer-name-wrap { display: flex; align-items: center; gap: 7px; font-size: 11.5px; font-weight: 600; }
     .color-dot { width: 10px; height: 10px; border-radius: 3px; display: inline-block; flex-shrink: 0; }
 
     .btn-fit {
       padding: 4px 8px; border-radius: 6px; border: 1px solid var(--border-line);
       background: rgba(255,255,255,0.04); color: var(--text-muted); font-size: 10px;
-      font-weight: 600; cursor: pointer; transition: 0.2s;
+      font-weight: 600; cursor: pointer; transition: 0.2s; flex-shrink: 0;
     }
     .btn-fit:hover { background: rgba(56, 189, 248, 0.15); color: var(--accent-blue); border-color: var(--accent-blue); }
 
-    /* Sakelar Geser Modern (Pill Toggle Switch) */
     .switch { position: relative; display: inline-block; width: 36px; height: 20px; flex-shrink: 0; }
     .switch input { opacity: 0; width: 0; height: 0; }
     .slider-toggle {
@@ -205,38 +219,36 @@
     }
     .range-slider { flex: 1; accent-color: var(--accent-cyan); cursor: pointer; height: 5px; }
 
-    /* Komponen Progres, KPI, Kurva S & Tabel */
-    .filter-grid { display: grid; grid-template-columns: 1fr 1fr auto; gap: 6px; }
+    .filter-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
     .custom-select, .custom-input {
       width: 100%; background: var(--bg-card-inner); color: var(--text-main);
       border: 1px solid var(--border-line); border-radius: 7px; padding: 7px 9px; font-size: 11.5px; outline: none;
     }
-    .kpi-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+    .kpi-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 7px; }
     .kpi-box {
       background: var(--bg-card-inner); border: 1px solid var(--border-line);
-      padding: 9px 8px; border-radius: 8px; display: flex; flex-direction: column;
+      padding: 8px; border-radius: 8px; display: flex; flex-direction: column;
     }
-    .kpi-val { font-size: 14px; font-weight: 700; color: var(--accent-blue); }
-    .kpi-lbl { font-size: 10px; color: var(--text-muted); margin-top: 2px; }
+    .kpi-val { font-size: 13.5px; font-weight: 700; color: var(--accent-blue); }
+    .kpi-lbl { font-size: 9.5px; color: var(--text-muted); margin-top: 2px; }
 
-    .canvas-holder { position: relative; height: 150px; width: 100%; }
+    .canvas-holder { position: relative; height: 145px; width: 100%; }
 
     .log-table-wrap {
-      max-height: 175px; overflow-y: auto;
+      max-height: 170px; overflow-y: auto; -webkit-overflow-scrolling: touch;
       border: 1px solid var(--border-line); border-radius: 8px; background: var(--bg-card-inner);
     }
     table.log-table { width: 100%; border-collapse: collapse; font-size: 10.5px; text-align: left; }
     table.log-table th {
-      background: #090e1a; color: var(--text-muted); padding: 6px 8px; position: sticky; top: 0; font-weight: 600;
+      background: #090e1a; color: var(--text-muted); padding: 6px 7px; position: sticky; top: 0; font-weight: 600; z-index: 2;
     }
-    table.log-table td { padding: 6px 8px; border-top: 1px solid rgba(255,255,255,0.06); cursor: pointer; }
+    table.log-table td { padding: 6px 7px; border-top: 1px solid rgba(255,255,255,0.06); cursor: pointer; }
     table.log-table tr:hover td { background: rgba(56, 189, 248, 0.12); }
 
     .badge-bast { padding: 2px 6px; border-radius: 6px; font-size: 9px; font-weight: 700; display: inline-block; }
     .bast-yes { background: rgba(34, 197, 94, 0.18); color: #4ade80; border: 1px solid rgba(34, 197, 94, 0.35); }
     .bast-no { background: rgba(245, 158, 11, 0.18); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.35); }
 
-    /* Komponen Dinamika & Legenda */
     .field-lbl { display: flex; justify-content: space-between; font-size: 11px; color: var(--text-muted); font-weight: 600; }
     .btn-swap {
       width: 100%; padding: 8px; border-radius: 7px;
@@ -256,70 +268,73 @@
     .action-btn {
       width: 100%; padding: 8px 10px; border-radius: 7px; border: 1px solid var(--border-line);
       background: rgba(56, 189, 248, 0.15); color: var(--accent-blue); font-size: 11.5px; font-weight: 600;
-      cursor: pointer; transition: 0.2s; text-align: center; display: inline-block;
+      cursor: pointer; transition: 0.2s; text-align: center; display: inline-block; text-decoration: none;
     }
     .action-btn:hover, .action-btn.active { background: var(--accent-blue); color: #0f172a; }
     .action-btn.secondary { background: rgba(34, 197, 94, 0.15); color: var(--accent-green); }
 
-    /* Footer Profil Proyek di Bawah Sidebar */
     .drawer-footer {
-      padding: 10px 14px; border-top: 1px solid var(--border-line);
+      padding: 9px 12px; border-top: 1px solid var(--border-line);
       background: #0a101d; display: flex; align-items: center; justify-content: space-between;
-      font-size: 10.5px; color: var(--text-muted); flex-shrink: 0;
+      font-size: 10px; color: var(--text-muted); flex-shrink: 0;
     }
     .footer-user { display: flex; align-items: center; gap: 8px; }
     .footer-avatar {
-      width: 26px; height: 26px; border-radius: 50%; background: var(--accent-cyan);
-      color: #0f172a; font-weight: 700; display: flex; align-items: center; justify-content: center; font-size: 11px;
+      width: 24px; height: 24px; border-radius: 50%; background: var(--accent-cyan);
+      color: #0f172a; font-weight: 700; display: flex; align-items: center; justify-content: center; font-size: 10.5px;
     }
 
     /* =========================================================
-       4. ELEMEN MENGAMBANG DI ATAS PETA
+       4. ELEMEN MENGAMBANG DI ATAS PETA (QUICK JUMP, KOMPAS, SKALA)
        ========================================================= */
     .quick-jump-bar {
-      position: absolute; top: 12px; left: calc(var(--sidebar-w) + 14px); z-index: 1000;
+      position: absolute; top: 12px; left: calc(var(--sidebar-w) + 14px); right: 74px;
+      width: max-content; max-width: calc(100% - var(--sidebar-w) - 88px); z-index: 1000;
       background: rgba(15, 23, 42, 0.92); backdrop-filter: blur(12px); border: 1px solid var(--border-line);
-      border-radius: 10px; padding: 5px 10px; display: flex; align-items: center; gap: 6px;
-      box-shadow: 0 4px 16px rgba(0,0,0,0.45); transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-      flex-wrap: wrap;
+      border-radius: 10px; padding: 5px 9px; display: flex; align-items: center; gap: 6px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.45); transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1), max-width 0.3s;
+      overflow-x: auto; scrollbar-width: none; white-space: nowrap;
     }
-    .left-drawer.collapsed ~ #map .quick-jump-bar { left: 48px; }
-    .jump-label { font-size: 11px; font-weight: 700; color: var(--accent-blue); margin-right: 2px; }
+    .quick-jump-bar::-webkit-scrollbar { display: none; }
+    .left-drawer.collapsed ~ #map .quick-jump-bar {
+      left: 44px; max-width: calc(100% - 118px);
+    }
+    .jump-label { font-size: 11px; font-weight: 700; color: var(--accent-blue); margin-right: 2px; flex-shrink: 0; }
     .jump-btn {
       padding: 4px 9px; border-radius: 6px; border: 1px solid var(--border-line);
       background: rgba(255,255,255,0.04); color: var(--text-main); font-size: 11px; font-weight: 500;
-      cursor: pointer; transition: 0.2s;
+      cursor: pointer; transition: 0.2s; flex-shrink: 0;
     }
     .jump-btn:hover { background: var(--accent-blue); color: #0f172a; font-weight: 600; }
 
     .compass-float {
-      position: absolute; top: 12px; right: 14px; z-index: 1000;
-      width: 48px; height: 54px; background: rgba(15, 23, 42, 0.92); backdrop-filter: blur(12px);
+      position: absolute; top: 12px; right: 12px; z-index: 1000;
+      width: 46px; height: 52px; background: rgba(15, 23, 42, 0.92); backdrop-filter: blur(12px);
       border: 1px solid var(--border-line); border-radius: 10px;
       display: flex; flex-direction: column; align-items: center; justify-content: center;
       box-shadow: 0 6px 20px rgba(0,0,0,0.5); cursor: pointer;
     }
     .compass-needle {
-      width: 10px; height: 24px;
+      width: 10px; height: 22px;
       background: linear-gradient(to bottom, #ef4444 50%, #94a3b8 50%);
       clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
     }
-    .compass-txt { font-size: 9px; font-weight: 700; color: var(--accent-orange); margin-top: 2px; }
+    .compass-txt { font-size: 8.5px; font-weight: 700; color: var(--accent-orange); margin-top: 2px; }
 
     .bottom-left-bar {
       position: absolute; bottom: 12px; left: calc(var(--sidebar-w) + 14px); z-index: 1000;
-      display: flex; align-items: center; gap: 10px;
+      display: flex; align-items: center; gap: 8px;
       transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1); pointer-events: none;
     }
-    .left-drawer.collapsed ~ #map .bottom-left-bar { left: 14px; }
+    .left-drawer.collapsed ~ #map .bottom-left-bar { left: 12px; }
 
     .status-pill {
       background: rgba(15, 23, 42, 0.92); backdrop-filter: blur(12px); border: 1px solid var(--border-line);
-      border-radius: 8px; padding: 5px 12px; font-size: 11px; color: var(--text-muted);
-      display: flex; align-items: center; gap: 8px; box-shadow: 0 4px 14px rgba(0,0,0,0.45);
+      border-radius: 8px; padding: 5px 10px; font-size: 10.5px; color: var(--text-muted);
+      display: flex; align-items: center; gap: 7px; box-shadow: 0 4px 14px rgba(0,0,0,0.45);
     }
-    .scale-line-box { border: 2px solid var(--accent-blue); border-top: none; height: 7px; width: 90px; display: inline-block; }
-    .bottom-right-bar { position: absolute; bottom: 12px; right: 14px; z-index: 1000; pointer-events: none; }
+    .scale-line-box { border: 2px solid var(--accent-blue); border-top: none; height: 6px; width: 70px; display: inline-block; }
+    .bottom-right-bar { position: absolute; bottom: 12px; right: 12px; z-index: 1000; pointer-events: none; }
 
     .slider-container {
       position: absolute; top: 0; bottom: 0; left: 0; width: 56px; margin-left: -28px;
@@ -339,11 +354,32 @@
     .measure-guide {
       position: absolute; top: 58px; left: 50%; transform: translateX(-50%); z-index: 1000;
       background: var(--bg-panel); color: #fff; padding: 6px 14px; border-radius: 20px;
-      font-size: 11px; border: 1px solid var(--accent-blue); display: none; pointer-events: none;
+      font-size: 11px; border: 1px solid var(--accent-blue); display: none; pointer-events: none; white-space: nowrap;
     }
 
     .leaflet-popup-content-wrapper { background: rgba(15, 23, 42, 0.95) !important; color: #fff !important; border-radius: 8px !important; border: 1px solid var(--border-line); }
     .leaflet-popup-tip { background: rgba(15, 23, 42, 0.95) !important; }
+
+    /* =========================================================
+       5. ATURAN RESPONSIF KHUSUS PONSEL (MOBILE VIEWPORT <= 768px)
+       ========================================================= */
+    @media (max-width: 768px) {
+      :root { --header-h: 50px; }
+      .top-header { padding: 0 8px; }
+      .brand-logo { display: none; }
+      .brand-text p { display: none; }
+      .brand-text h1 { font-size: 12px; }
+      .hdr-btn { padding: 5px 8px; font-size: 10.5px; }
+      .left-drawer { width: 88vw; max-width: 360px; }
+      .quick-jump-bar { left: 42px !important; max-width: calc(100vw - 104px) !important; top: 10px; padding: 4px 7px; }
+      .compass-float { top: 10px; right: 8px; width: 40px; height: 44px; }
+      .bottom-left-bar { left: 8px !important; bottom: 8px; }
+      .hide-on-mobile { display: none !important; }
+      .bottom-right-bar { right: 8px; bottom: 8px; }
+      .status-pill { padding: 4px 8px; font-size: 9.5px; gap: 5px; }
+      .scale-line-box { width: 48px; }
+      .dropdown-menu { right: 10px; }
+    }
   </style>
 </head>
 <body>
@@ -355,7 +391,7 @@
       <div class="brand-logo">TL</div>
       <div class="brand-text">
         <h1>
-          WebGIS Digital Twin Konstruksi
+          <span>Digital Twin Konstruksi</span>
           <span class="badge-active" id="csvStatusBadge">AKTIF</span>
         </h1>
         <p>Monitoring Progres Kontraktor, Kurva S, Volume Cut-Fill & Status BAST</p>
@@ -363,6 +399,11 @@
     </div>
 
     <div class="header-right">
+      <!-- TOMBOL SHORTCUT PINDAH KE WEBGIS 3D -->
+      <a href="index_3d.html" class="hdr-btn btn-3d-switch" title="Buka WebGIS Topografi 3D, Cut-Fill & BIM">
+        ⛰️ Mode 3D
+      </a>
+
       <div class="dropdown-wrap">
         <button class="hdr-btn" id="btnMeasureDropdown">📏 Ukur ▾</button>
         <div class="dropdown-menu" id="measureMenu">
@@ -372,7 +413,7 @@
         </div>
       </div>
 
-      <button class="hdr-btn active" id="btnHeaderSwipe" title="Pintasan Tirai Swipe (Shortcut: S)">🌓 Tirai Swipe</button>
+      <button class="hdr-btn active" id="btnHeaderSwipe" title="Pintasan Tirai Swipe (Shortcut: S)">🌓 Swipe</button>
       <button class="hdr-btn" id="btnFullscreen" title="Layar Penuh">⛶</button>
     </div>
   </header>
@@ -380,9 +421,8 @@
   <!-- 2. WADAH UTAMA -->
   <div class="main-wrapper">
 
-    <!-- SIDEBAR KIRI DENGAN TAB HALAMAN MANDIRI -->
+    <!-- SIDEBAR KIRI DENGAN 5 TAB HALAMAN MANDIRI -->
     <aside class="left-drawer" id="leftDrawer">
-      <!-- Baris Navigasi Tab -->
       <div class="drawer-tabs">
         <button class="d-tab active" data-tab="paneProgres">📊 Progres</button>
         <button class="d-tab" data-tab="paneLapisan">🗂️ Lapisan</button>
@@ -391,19 +431,16 @@
         <button class="d-tab" data-tab="paneInspeksi">🛠️ Inspeksi</button>
       </div>
 
-      <!-- Konten Halaman Tab -->
       <div class="drawer-content">
 
-        <!-- =======================================================
-             TAB 1: PROGRES KONTRAKTOR & KURVA S (MANAJER)
-             ======================================================= -->
+        <!-- TAB 1: PROGRES KONTRAKTOR & KURVA S -->
         <div class="tab-pane active" id="paneProgres">
           <div class="pane-banner">
             <div>
               <div class="pane-banner-title">Evaluasi Progres & Kurva S</div>
               <div class="pane-banner-sub">Pantau luasan, kubikasi Cut-Fill & BAST</div>
             </div>
-            <span class="pane-badge">MANAJER</span>
+            <a href="index_3d.html" class="pane-badge" style="text-decoration:none; cursor:pointer;">⛰️ BUKA 3D ➔</a>
           </div>
 
           <div class="menu-card">
@@ -414,7 +451,7 @@
                 <input type="file" id="csvFileInput" accept=".csv" style="display:none;" />
               </label>
             </div>
-            <div class="filter-grid" style="grid-template-columns: 1fr 1fr;">
+            <div class="filter-grid">
               <select id="contractorFilter" class="custom-select">
                 <option value="ALL">Semua Kontraktor</option>
               </select>
@@ -456,7 +493,7 @@
           <div class="menu-card">
             <div class="menu-card-header">
               <span>📋 Tabel Rincian Pekerjaan & BAST</span>
-              <span style="font-size:9.5px; color:var(--text-muted);">Klik baris = Zoom</span>
+              <span style="font-size:9.5px; color:var(--text-muted);">Ketuk baris = Zoom</span>
             </div>
             <div class="log-table-wrap">
               <table class="log-table">
@@ -475,9 +512,7 @@
           </div>
         </div>
 
-        <!-- =======================================================
-             TAB 2: LAPISAN VEKTOR & SITEPLAN (SEPERTI VIDEO 00:00)
-             ======================================================= -->
+        <!-- TAB 2: LAPISAN VEKTOR & SITEPLAN -->
         <div class="tab-pane" id="paneLapisan">
           <div class="pane-banner">
             <div>
@@ -487,7 +522,6 @@
             <span class="pane-badge">5 LAYER</span>
           </div>
 
-          <!-- Item Layer 1: Poligon Progres QGIS -->
           <div class="layer-item-card">
             <div class="layer-top-row">
               <label class="switch">
@@ -507,7 +541,6 @@
             </div>
           </div>
 
-          <!-- Item Layer 2: Rencana Jalan (ROW) -->
           <div class="layer-item-card">
             <div class="layer-top-row">
               <label class="switch">
@@ -527,7 +560,6 @@
             </div>
           </div>
 
-          <!-- Item Layer 3: Siteplan Cluster 1 -->
           <div class="layer-item-card">
             <div class="layer-top-row">
               <label class="switch">
@@ -547,7 +579,6 @@
             </div>
           </div>
 
-          <!-- Item Layer 4: Siteplan Cluster 2 -->
           <div class="layer-item-card">
             <div class="layer-top-row">
               <label class="switch">
@@ -567,7 +598,6 @@
             </div>
           </div>
 
-          <!-- Item Layer 5: Siteplan Cluster 3 -->
           <div class="layer-item-card">
             <div class="layer-top-row">
               <label class="switch">
@@ -588,9 +618,7 @@
           </div>
         </div>
 
-        <!-- =======================================================
-             TAB 3: DINAMIKA & TIRAI PEMBANDING (SEPERTI VIDEO 00:03)
-             ======================================================= -->
+        <!-- TAB 3: DINAMIKA & TIRAI PEMBANDING -->
         <div class="tab-pane" id="paneDinamika">
           <div class="pane-banner">
             <div>
@@ -644,15 +672,13 @@
               </div>
               <input type="range" id="sliderRangeInput" class="range-slider" min="0" max="100" value="50" style="width:100%; margin:6px 0;" />
               <div class="field-lbl" style="font-size:9.5px;">
-                <span>0% (Penuh Kanan)</span><span>50%</span><span>100% (Penuh Kiri)</span>
+                <span>0% (Kanan)</span><span>50%</span><span>100% (Kiri)</span>
               </div>
             </div>
           </div>
         </div>
 
-        <!-- =======================================================
-             TAB 4: LEGENDA KARTOGRAFIS PETA (SEPERTI VIDEO 00:02)
-             ======================================================= -->
+        <!-- TAB 4: LEGENDA KARTOGRAFIS PETA -->
         <div class="tab-pane" id="paneLegenda">
           <div class="pane-banner">
             <div>
@@ -710,9 +736,7 @@
           </div>
         </div>
 
-        <!-- =======================================================
-             TAB 5: INSPEKSI QC LAPANGAN & VALIDASI GPS (SEPERTI VIDEO 00:05)
-             ======================================================= -->
+        <!-- TAB 5: INSPEKSI QC LAPANGAN & VALIDASI GPS -->
         <div class="tab-pane" id="paneInspeksi">
           <div class="pane-banner">
             <div>
@@ -734,8 +758,8 @@
               <option value="Kendala Drainase">Temuan: Genangan / Saluran</option>
             </select>
             <input type="text" id="defectNote" class="custom-input" placeholder="Ketik nama kontraktor & detail catatan QC..." />
-            <button class="action-btn" id="btnAddDefect">📍 Klik Peta untuk Catat Titik QC</button>
-            <div class="filter-grid" style="grid-template-columns: 1fr 1fr; margin-top:2px;">
+            <button class="action-btn" id="btnAddDefect">📍 Ketuk Peta untuk Catat Titik QC</button>
+            <div class="filter-grid" style="margin-top:2px;">
               <button class="action-btn secondary" id="btnCheckGPS">🎯 Cek GPS Saya</button>
               <button class="action-btn secondary" id="btnExportDefects">💾 Unduh GeoJSON</button>
             </div>
@@ -746,13 +770,12 @@
               <span>🗂️ Daftar Riwayat Titik QC Tersimpan</span>
               <button id="btnClearDefects" style="background:none;border:none;color:#f43f5e;font-size:10px;cursor:pointer;font-weight:600;">Reset</button>
             </div>
-            <div id="defectListContainer" style="display:flex; flex-direction:column; gap:6px; max-height:190px; overflow-y:auto;"></div>
+            <div id="defectListContainer" style="display:flex; flex-direction:column; gap:6px; max-height:180px; overflow-y:auto;"></div>
           </div>
         </div>
 
       </div>
 
-      <!-- Footer Profil Proyek -->
       <div class="drawer-footer">
         <div class="footer-user">
           <div class="footer-avatar">TL</div>
@@ -761,7 +784,7 @@
             <span>Civil & Infrastructure Digital Twin • 2026</span>
           </div>
         </div>
-        <span style="color:var(--accent-blue); font-weight:600;">WGS 84</span>
+        <a href="index_3d.html" style="color:var(--accent-blue); font-weight:700; text-decoration:none;">⛰️ Mode 3D</a>
       </div>
     </aside>
 
@@ -782,9 +805,9 @@
         <button class="jump-btn" data-jump="row">Rencana Jalan (ROW)</button>
       </div>
 
-      <div class="measure-guide" id="measureGuide">Klik titik pada peta. Klik 2x untuk mengakhiri.</div>
+      <div class="measure-guide" id="measureGuide">Ketuk titik pada peta. Ketuk 2x untuk mengakhiri.</div>
 
-      <div class="compass-float" id="btnResetNorth" title="Klik untuk pusatkan kembali">
+      <div class="compass-float" id="btnResetNorth" title="Ketuk untuk pusatkan kembali">
         <div class="compass-needle"></div>
         <div class="compass-txt">0° U</div>
       </div>
@@ -795,8 +818,8 @@
       </div>
 
       <div class="bottom-left-bar">
-        <div class="status-pill">
-          <span>🖱️ Klik baris tabel untuk menyorot area</span>
+        <div class="status-pill hide-on-mobile">
+          <span>🖱️ Ketuk baris tabel untuk menyorot area</span>
         </div>
         <div class="status-pill">
           <span class="scale-line-box"></span>
@@ -807,7 +830,7 @@
 
       <div class="bottom-right-bar">
         <div class="status-pill">
-          <span>Zoom: <b id="zoomLevelBadge" style="color:#fff;">17</b></span>
+          <span>Z: <b id="zoomLevelBadge" style="color:#fff;">17</b></span>
           <span>|</span>
           <span id="coordText" style="color:var(--accent-orange); font-weight:600;">-6.5450° S, 106.8650° E</span>
         </div>
@@ -825,7 +848,7 @@
       initialZoom: 17,
       maxZoom: 23,
       maxNativeZoom: 21,
-      cacheBuster: '?v=14',
+      cacheBuster: '?v=20',
       csvUrl: 'log_progres.csv',
       progresGeoJsonUrl: 'progres_pekerjaan.geojson',
       orthoSources: {
@@ -849,6 +872,7 @@
       renderer: canvasRenderer
     });
 
+    // Basemap Satelit Google Standar (Stabil Tanpa Opsi Basemap Lain)
     L.tileLayer('https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
       maxZoom: AppConfig.maxZoom, maxNativeZoom: 20, attribution: '&copy; Google Maps'
     }).addTo(map);
@@ -857,9 +881,16 @@
     L.DomEvent.disableClickPropagation(document.getElementById('btnResetNorth'));
 
     // =========================================================
-    // 1. LOGIKA BUKA-TUTUP SIDEBAR & PERPINDAHAN TAB HALAMAN
+    // 1. LOGIKA BUKA-TUTUP SIDEBAR & AUTO-COLLAPSE DI PONSEL
     // =========================================================
     const leftDrawer = document.getElementById('leftDrawer');
+    function isMobileScreen() { return window.innerWidth <= 768; }
+
+    // Jika dibuka di layar ponsel, lipat sidebar otomatis di awal agar peta langsung terlihat luas
+    if (isMobileScreen()) {
+      leftDrawer.classList.add('collapsed');
+    }
+
     function toggleSidebar() {
       leftDrawer.classList.toggle('collapsed');
       setTimeout(() => {
@@ -899,7 +930,7 @@
       document.getElementById('scaleRatioVal').textContent = `(1 : ${scaleApprox.toLocaleString('id-ID')})`;
 
       const metersPerPx = 156543.03392 * Math.cos(center.lat * Math.PI / 180) / Math.pow(2, zoom);
-      const barMeters = Math.round(metersPerPx * 90);
+      const barMeters = Math.round(metersPerPx * 70);
       document.getElementById('scaleBarText').textContent = barMeters >= 1000
         ? (barMeters / 1000).toFixed(1) + ' km'
         : Math.max(5, Math.round(barMeters / 5) * 5) + ' m';
@@ -920,7 +951,7 @@
     const vectorLayerInstances = {};
 
     // =========================================================
-    // 3. MODUL ANALITIK KONTRAKTOR & KURVA S (TAB PROGRES)
+    // 3. MODUL ANALITIK KONTRAKTOR & KURVA S
     // =========================================================
     const AnalyticsModule = (() => {
       let rawRecords = [];
@@ -1051,7 +1082,10 @@ M4,2026-10-22,CV Bangun Jaya,Finishing Kavling,Cluster 3,4100,600,550,100.0,94.0
           `;
           tr.addEventListener('click', () => {
             const key = r.area.toLowerCase().trim();
-            if (areaBoundsRegistry[key]) map.flyToBounds(areaBoundsRegistry[key], { padding: [40, 40], maxZoom: 19, duration: 1.0 });
+            if (isMobileScreen()) leftDrawer.classList.add('collapsed');
+            if (areaBoundsRegistry[key]) {
+              map.flyToBounds(areaBoundsRegistry[key], { padding: [40, 40], maxZoom: 19, duration: 1.0 });
+            }
           });
           tbody.appendChild(tr);
         });
@@ -1069,14 +1103,14 @@ M4,2026-10-22,CV Bangun Jaya,Finishing Kavling,Cluster 3,4100,600,550,100.0,94.0
         rawRecords = parseCSV(csvText);
         populateDropdowns();
         updateDashboard();
-        document.getElementById('csvStatusBadge').textContent = `${label} (${rawRecords.length})`;
+        document.getElementById('csvStatusBadge').textContent = `${label}`;
       }
 
       function init() {
         fetch(AppConfig.csvUrl + AppConfig.cacheBuster)
           .then(res => res.ok ? res.text() : Promise.reject())
           .then(text => loadFromText(text, 'CSV AKTIF'))
-          .catch(() => loadFromText(fallbackCSV, 'SIMULASI AKTIF'));
+          .catch(() => loadFromText(fallbackCSV, 'SIMULASI'));
 
         document.getElementById('contractorFilter').addEventListener('change', updateDashboard);
         document.getElementById('workFilter').addEventListener('change', updateDashboard);
@@ -1092,7 +1126,7 @@ M4,2026-10-22,CV Bangun Jaya,Finishing Kavling,Cluster 3,4100,600,550,100.0,94.0
     })();
 
     // =========================================================
-    // 4. MODUL DINAMIKA TIRAI SWIPE (TAB DINAMIKA)
+    // 4. MODUL DINAMIKA TIRAI SWIPE
     // =========================================================
     const SliderModule = (() => {
       let leftLayer = null, rightLayer = null, ratio = 0.5, isDragging = false, swipeActive = true;
@@ -1191,7 +1225,6 @@ M4,2026-10-22,CV Bangun Jaya,Finishing Kavling,Cluster 3,4100,600,550,100.0,94.0
         chkSwipe.addEventListener('change', e => setSwipeState(e.target.checked));
         btnHdrSwipe.addEventListener('click', () => setSwipeState(!swipeActive));
 
-        // Pintasan Keyboard "S" untuk Tirai Swipe
         document.addEventListener('keydown', e => {
           if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
           if (e.key.toLowerCase() === 's') setSwipeState(!swipeActive);
@@ -1205,7 +1238,7 @@ M4,2026-10-22,CV Bangun Jaya,Finishing Kavling,Cluster 3,4100,600,550,100.0,94.0
     })();
 
     // =========================================================
-    // 5. MODUL LAPISAN VEKTOR, OPASITAS & FIT TO LAYER (TAB LAPISAN)
+    // 5. MODUL LAPISAN VEKTOR, OPASITAS & FIT TO LAYER
     // =========================================================
     const VectorModule = (() => {
       let progresGeoJsonData = null;
@@ -1248,7 +1281,6 @@ M4,2026-10-22,CV Bangun Jaya,Finishing Kavling,Cluster 3,4100,600,550,100.0,94.0
             .catch(() => {});
         });
 
-        // Kontrol Slider Opasitas Tiap Layer Siteplan
         document.querySelectorAll('[data-layer-op]').forEach(slider => {
           slider.addEventListener('input', e => {
             const chkId = e.target.getAttribute('data-layer-op');
@@ -1318,10 +1350,11 @@ M4,2026-10-22,CV Bangun Jaya,Finishing Kavling,Cluster 3,4100,600,550,100.0,94.0
 
       function initQuickJumpAndFit() {
         const triggerFly = key => {
+          if (isMobileScreen()) leftDrawer.classList.add('collapsed');
           if (key === 'all') {
             map.flyTo(AppConfig.center, AppConfig.initialZoom, { duration: 1.0 });
           } else if (areaBoundsRegistry[key] && areaBoundsRegistry[key].isValid()) {
-            map.flyToBounds(areaBoundsRegistry[key], { padding: [50, 50], maxZoom: 19, duration: 1.0 });
+            map.flyToBounds(areaBoundsRegistry[key], { padding: [40, 40], maxZoom: 19, duration: 1.0 });
           } else {
             map.flyTo(AppConfig.center, 18, { duration: 1.0 });
           }
@@ -1344,7 +1377,7 @@ M4,2026-10-22,CV Bangun Jaya,Finishing Kavling,Cluster 3,4100,600,550,100.0,94.0
     })();
 
     // =========================================================
-    // 6. MODUL INSPEKTOR QC & PENGUKURAN (TAB INSPEKSI)
+    // 6. MODUL INSPEKTOR QC & PENGUKURAN
     // =========================================================
     const FieldModule = (() => {
       let isPinning = false;
@@ -1388,7 +1421,10 @@ M4,2026-10-22,CV Bangun Jaya,Finishing Kavling,Cluster 3,4100,600,550,100.0,94.0
               <span>${d.note} (${d.timestamp})</span>
             </div>
           `;
-          item.addEventListener('click', () => map.flyTo([d.lat, d.lng], 19, { duration: 0.8 }));
+          item.addEventListener('click', () => {
+            if (isMobileScreen()) leftDrawer.classList.add('collapsed');
+            map.flyTo([d.lat, d.lng], 19, { duration: 0.8 });
+          });
           listEl.appendChild(item);
         });
       }
@@ -1430,8 +1466,9 @@ M4,2026-10-22,CV Bangun Jaya,Finishing Kavling,Cluster 3,4100,600,550,100.0,94.0
           cancelMeasure();
           isPinning = !isPinning;
           btnAdd.classList.toggle('active', isPinning);
-          btnAdd.textContent = isPinning ? '🎯 Klik Lokasi di Peta...' : '📍 Klik Peta untuk Catat Titik QC';
+          btnAdd.textContent = isPinning ? '🎯 Ketuk Lokasi di Peta...' : '📍 Ketuk Peta untuk Catat Titik QC';
           map.getContainer().style.cursor = isPinning ? 'crosshair' : '';
+          if (isPinning && isMobileScreen()) leftDrawer.classList.add('collapsed');
         });
 
         document.getElementById('btnClearDefects').addEventListener('click', () => {
@@ -1451,7 +1488,7 @@ M4,2026-10-22,CV Bangun Jaya,Finishing Kavling,Cluster 3,4100,600,550,100.0,94.0
             localStorage.setItem(storageKey, JSON.stringify(list));
             document.getElementById('defectNote').value = '';
             isPinning = false; btnAdd.classList.remove('active');
-            btnAdd.textContent = '📍 Klik Peta untuk Catat Titik QC';
+            btnAdd.textContent = '📍 Ketuk Peta untuk Catat Titik QC';
             map.getContainer().style.cursor = '';
             renderDefects();
             return;
@@ -1487,6 +1524,7 @@ M4,2026-10-22,CV Bangun Jaya,Finishing Kavling,Cluster 3,4100,600,550,100.0,94.0
 
         document.getElementById('btnCheckGPS').addEventListener('click', () => {
           if (!navigator.geolocation) return alert('GPS tidak didukung.');
+          if (isMobileScreen()) leftDrawer.classList.add('collapsed');
           navigator.geolocation.getCurrentPosition(pos => {
             const { latitude, longitude, accuracy } = pos.coords;
             map.flyTo([latitude, longitude], 19);
